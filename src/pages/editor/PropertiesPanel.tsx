@@ -13,12 +13,14 @@ import {
   stackRoom,
   type ZMove,
 } from '../../model/ops'
-import { detectRooms, formatArea } from '../../geometry/rooms'
+import { detectRooms } from '../../geometry/rooms'
 import { add, angleDeg, dist, norm, scale, sub } from '../../geometry/vec'
 import { bulgeForSweep, clampOpeningOffset, flipAlign, sweepOf, wallArc, wallLength } from '../../geometry/walls'
 import { FALLBACK_DEF, itemSize, type DefMap } from '../../render/planGeometry'
 import { useEditor } from '../../store/editorStore'
 import { Field, NumberInput, Segmented } from '../../ui'
+import { formatArea, formatLength } from '../../units/units'
+import { useUnits } from '../../units/unitsStore'
 
 const st = () => useEditor.getState()
 
@@ -124,6 +126,7 @@ export function PropertiesPanel({ defs }: { defs: DefMap }) {
 }
 
 function PlanProps({ plan }: { plan: Plan }) {
+  const units = useUnits()
   const rooms = useMemo(() => detectRooms(plan.walls, plan.roomLabels), [plan.walls, plan.roomLabels])
   const total = rooms.reduce((s, r) => s + r.area, 0)
   const set = (mutate: (p: Plan) => void) => st().commit(mutate)
@@ -167,12 +170,12 @@ function PlanProps({ plan }: { plan: Plan }) {
               {rooms.map((r) => (
                 <tr key={r.key}>
                   <td>{r.label?.name ?? 'Unnamed'}</td>
-                  <td>{formatArea(r.area)}</td>
+                  <td>{formatArea(r.area, units)}</td>
                 </tr>
               ))}
               <tr className="total">
                 <td>Total</td>
-                <td>{formatArea(total)}</td>
+                <td>{formatArea(total, units)}</td>
               </tr>
             </tbody>
           </table>
@@ -229,6 +232,7 @@ function MultiPropsWithArrange({ sel }: { sel: SelectionRef[] }) {
 }
 
 function ItemProps({ plan, id, defs }: { plan: Plan; id: string; defs: DefMap }) {
+  const units = useUnits()
   const it = plan.items.find((i) => i.id === id)
   if (!it) return null
   const def = defs.get(it.defId) ?? FALLBACK_DEF
@@ -284,7 +288,7 @@ function ItemProps({ plan, id, defs }: { plan: Plan; id: string; defs: DefMap })
               })
             }
           >
-            Reset to {def.width}×{def.depth}
+            Reset to {formatLength(def.width, units)} × {formatLength(def.depth, units)}
           </button>
         )}
       </Section>
@@ -295,6 +299,7 @@ function ItemProps({ plan, id, defs }: { plan: Plan; id: string; defs: DefMap })
 }
 
 function WallProps({ plan, id }: { plan: Plan; id: string }) {
+  const units = useUnits()
   const w = plan.walls.find((x) => x.id === id)
   if (!w) return null
   const length = wallLength(w)
@@ -406,7 +411,7 @@ function WallProps({ plan, id }: { plan: Plan; id: string }) {
             {arc && (
               <tr>
                 <td>Arc length</td>
-                <td>{Math.round(length)} cm</td>
+                <td>{formatLength(length, units, true)}</td>
               </tr>
             )}
             <tr>
@@ -506,6 +511,7 @@ function OpeningProps({ plan, id }: { plan: Plan; id: string }) {
 }
 
 function LabelProps({ plan, id }: { plan: Plan; id: string }) {
+  const units = useUnits()
   const l = plan.roomLabels.find((x) => x.id === id)
   const rooms = useMemo(() => detectRooms(plan.walls, plan.roomLabels), [plan.walls, plan.roomLabels])
   if (!l) return null
@@ -534,7 +540,7 @@ function LabelProps({ plan, id }: { plan: Plan; id: string }) {
           <tbody>
             <tr>
               <td>Area</td>
-              <td>{room ? formatArea(room.area) : 'Not inside a room'}</td>
+              <td>{room ? formatArea(room.area, units) : 'Not inside a room'}</td>
             </tr>
           </tbody>
         </table>
@@ -545,6 +551,7 @@ function LabelProps({ plan, id }: { plan: Plan; id: string }) {
 }
 
 function DimensionProps({ plan, id }: { plan: Plan; id: string }) {
+  const units = useUnits()
   const dm = plan.dimensions.find((x) => x.id === id)
   if (!dm) return null
   return (
@@ -554,7 +561,7 @@ function DimensionProps({ plan, id }: { plan: Plan; id: string }) {
           <tbody>
             <tr>
               <td>Length</td>
-              <td>{Math.round(dist(dm.a, dm.b))} cm</td>
+              <td>{formatLength(dist(dm.a, dm.b), units, true)}</td>
             </tr>
           </tbody>
         </table>

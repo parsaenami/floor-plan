@@ -6,6 +6,8 @@ import { PlanLayers } from '../render/PlanLayers'
 import { planBBox, type DefMap } from '../render/planGeometry'
 import { MONO, PrintMode } from '../render/Primitives'
 import { PlanColorsContext, THEMES, type ThemeId } from '../theme/themes'
+import { formatArea } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 
 export type Paper = 'A4' | 'A3'
 export type Orientation = 'landscape' | 'portrait'
@@ -65,16 +67,18 @@ export function Sheet({ plan, defs, rooms, options }: { plan: Plan; defs: DefMap
   const oy = area.y + (area.h - (bb.maxY - bb.minY) * k) / 2
   const unit = (0.2 * options.scale) / 10 // 0.2 mm hairline, in cm
   const total = rooms.reduce((s, r) => s + r.area, 0)
+  const units = useUnits()
   const date = new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
   const colors = THEMES[options.theme].plan
   const INK = colors.ink
   const PAPER = colors.paper
 
-  // Scale bar: whole metres, at most ~70 mm long.
-  const mPerMm = options.scale / 1000
-  const barMetres = [10, 5, 4, 2, 1].find((m) => m / mPerMm <= 72) ?? 1
-  const segs = barMetres <= 5 ? barMetres : barMetres / 2
-  const segMm = barMetres / mPerMm / segs
+  // Scale bar: whole metres (or feet), at most ~70 mm long.
+  const imperial = units === 'imperial'
+  const mmPer = (imperial ? 304.8 : 1000) / options.scale
+  const bar = (imperial ? [20, 10, 5, 4, 2, 1] : [10, 5, 4, 2, 1]).find((m) => m * mmPer <= 72) ?? 1
+  const segs = bar <= 5 ? bar : bar / 2
+  const segMm = (bar * mmPer) / segs
   const barX = area.x
   const barY = area.y + area.h - 4
 
@@ -83,7 +87,7 @@ export function Sheet({ plan, defs, rooms, options }: { plan: Plan; defs: DefMap
     ['PROJECT', options.title, 0.4],
     ['DRAWING', (activeFloor(plan)?.name ?? 'Floor plan').toUpperCase(), 0.18],
     ['SCALE', `1:${options.scale}`, 0.12],
-    ['AREA', `${total.toFixed(2)} m²`, 0.14],
+    ['AREA', formatArea(total, units), 0.14],
     ['DATE', date, 0.16],
   ]
   const frameW = w - 2 * MARGIN
@@ -118,11 +122,11 @@ export function Sheet({ plan, defs, rooms, options }: { plan: Plan; defs: DefMap
         ))}
         {Array.from({ length: segs + 1 }, (_, i) => (
           <text key={i} x={barX + i * segMm} y={barY - 2.8} textAnchor="middle" fontSize={2.2} fontFamily={MONO} fill={INK}>
-            {Math.round((i * barMetres) / segs)}
+            {Math.round((i * bar) / segs)}
           </text>
         ))}
         <text x={barX + segs * segMm + 3} y={barY} fontSize={2.2} fontFamily={MONO} fill={INK}>
-          m
+          {imperial ? 'ft' : 'm'}
         </text>
       </g>
 

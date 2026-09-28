@@ -226,5 +226,3 @@ function insetPolygon(face: HalfEdge[]): Pt[] {
 
 const clamp01 = (t: number) => Math.max(0, Math.min(1, t))
 const lerpPt = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t })
-
-export const formatArea = (m2: number) => `${m2.toFixed(2)} m²`

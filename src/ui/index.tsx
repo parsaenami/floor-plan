@@ -3,6 +3,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { useTheme } from '../theme/themeStore'
 import { THEMES, THEME_IDS } from '../theme/themes'
+import { formatLength, parseLength } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 
 export function Modal({
   title,
@@ -54,7 +56,8 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 /**
  * Numeric input that commits on blur/Enter so typing intermediate values
- * does not spam the undo history.
+ * does not spam the undo history. A `suffix="cm"` marks a length: it shows and
+ * reads in the app's units (feet-inches when imperial) while values stay in cm.
  */
 export function NumberInput({
   value,
@@ -73,15 +76,19 @@ export function NumberInput({
   step?: number
   precision?: number
 }) {
-  const fmt = (v: number) => (Number.isFinite(v) ? String(Number(v.toFixed(precision))) : '')
+  const units = useUnits()
+  const imperial = suffix === 'cm' && units === 'imperial'
+  const fmt = (v: number) => (!Number.isFinite(v) ? '' : imperial ? formatLength(v, units) : String(Number(v.toFixed(precision))))
+  const parse = (s: string) => parseLength(s, imperial ? units : 'metric')
   const [draft, setDraft] = useState(fmt(value))
   const [focused, setFocused] = useState(false)
   useEffect(() => {
     if (!focused) setDraft(fmt(value))
-  }, [value, focused])
+  }, [value, focused, imperial])
   const commit = () => {
-    const v = Number(draft)
-    if (draft.trim() === '' || !Number.isFinite(v)) {
+    const v = parse(draft)
+    // Untouched text is left alone: imperial display is rounded and would nudge the value.
+    if (v === null || draft === fmt(value)) {
       setDraft(fmt(value))
       return
     }
@@ -107,15 +114,15 @@ export function NumberInput({
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
           if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault()
-            const k = (e.shiftKey ? 10 : 1) * step * (e.key === 'ArrowUp' ? 1 : -1)
-            const base = Number(draft)
-            const next = (Number.isFinite(base) ? base : value) + k
+            // Imperial lengths step by the inch, or the foot with shift.
+            const k = (imperial ? (e.shiftKey ? 12 : 1) * 2.54 : (e.shiftKey ? 10 : 1) * step) * (e.key === 'ArrowUp' ? 1 : -1)
+            const next = (parse(draft) ?? value) + k
             setDraft(fmt(next))
             onChange(Math.max(min ?? -Infinity, Math.min(max ?? Infinity, next)))
           }
         }}
       />
-      {suffix && <span className="suffix">{suffix}</span>}
+      {suffix && !imperial && <span className="suffix">{suffix}</span>}
     </div>
   )
 }

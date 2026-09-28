@@ -18,6 +18,8 @@ import { DimLine } from '../../render/DimLine'
 import { itemCorners, itemLocalToWorld, itemSize, type DefMap } from '../../render/planGeometry'
 import { HaloText, Primitives } from '../../render/Primitives'
 import { usePlanColors } from '../../theme/themes'
+import { formatArea, formatLength } from '../../units/units'
+import { useUnits } from '../../units/unitsStore'
 import type { Preview } from './tools/types'
 
 const pts = (p: Pt[]) => p.map((q) => `${q.x},${q.y}`).join(' ')
@@ -60,6 +62,7 @@ function sidePoint(w: Wall, s: number, offset: number): Pt {
 
 /** Length for straight walls; arc length, radius and sweep for curved ones. */
 function WallDims({ w, unit }: { w: Omit<Wall, 'id'>; unit: number }) {
+  const units = useUnits()
   const [lo, hi] = wallBand(w)
   const arc = wallArc(w)
   if (!arc) return <DimLine a={w.a} b={w.b} offset={hi + 16 * unit} unit={unit} />
@@ -71,7 +74,7 @@ function WallDims({ w, unit }: { w: Omit<Wall, 'id'>; unit: number }) {
   const p = add(f.p, scale(perp(f.dir), side * (Math.max(0, body) + 14 * unit)))
   return (
     <HaloText x={p.x} y={p.y} middle size={unit * 8.5} unit={unit}>
-      {`${Math.round(l)} · R${Math.round(arc.r)} · ${Math.round(Math.abs(sweepOf(w)))}°`}
+      {`${formatLength(l, units)} · R${formatLength(arc.r, units)} · ${Math.round(Math.abs(sweepOf(w)))}°`}
     </HaloText>
   )
 }
@@ -236,6 +239,7 @@ function SnapMark({ p, kind, unit }: { p: Pt; kind: string; unit: number }) {
 
 export function PreviewLayer({ plan, preview, unit }: { plan: Plan; preview: Preview | null; unit: number }) {
   const c = usePlanColors()
+  const units = useUnits()
   if (!preview) return null
   const t = plan.settings.defaultWallThickness
   const ghost = { fill: c.ink, fillOpacity: 0.28, stroke: c.ink, strokeWidth: unit }
@@ -308,7 +312,7 @@ export function PreviewLayer({ plan, preview, unit }: { plan: Plan; preview: Pre
             fontFamily="var(--font-mono)"
             fill={c.ink}
           >
-            {(((x1 - x0) * (y1 - y0)) / 10000).toFixed(2)} m²
+            {formatArea(((x1 - x0) * (y1 - y0)) / 10000, units)}
           </text>
         </>
       )

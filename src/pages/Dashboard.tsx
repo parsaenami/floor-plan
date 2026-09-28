@@ -8,6 +8,8 @@ import { PlanThumb } from '../render/PlanThumb'
 import { useComponents, useDefMap } from '../store/componentsStore'
 import { usePlans, type Template } from '../store/plansStore'
 import { ConfirmModal, Field, Modal, Segmented, toast } from '../ui'
+import { formatArea } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 import { LegalFooter } from './Legal'
 import './dashboard.css'
 import { DashHead } from './DashHead'
@@ -140,6 +142,7 @@ function PlanCard({
 }) {
   const rooms = useMemo(() => detectRooms(plan.walls, plan.roomLabels), [plan.walls, plan.roomLabels])
   const area = rooms.reduce((s, r) => s + r.area, 0)
+  const units = useUnits()
   return (
     <article className="plan-card">
       <button className="plan-thumb" onClick={onOpen} aria-label={`Open ${plan.name}`}>
@@ -151,7 +154,7 @@ function PlanCard({
             {plan.name}
           </button>
           <div className="mono plan-sub">
-            {dateFmt.format(plan.updatedAt)} · {rooms.length} rooms · {area.toFixed(1)} m²
+            {dateFmt.format(plan.updatedAt)} · {rooms.length} rooms · {formatArea(area, units, 1)}
           </div>
         </div>
         <div className="plan-actions">
