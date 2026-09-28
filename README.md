@@ -95,6 +95,15 @@ npm start                                   # or use the systemd unit below
 - `deploy/Caddyfile` puts Caddy in front of it for automatic HTTPS. Replace the domain with yours.
 - The server listens on `127.0.0.1:3000`; set `PORT` and `HOST` to change that.
 
+## Offline and install
+
+Production builds are an installable app (use *Install* in the browser's address bar, or *Add to Home Screen* on a phone) and keep working offline, since plans live in the browser anyway.
+
+- `public/manifest.webmanifest` and the PNG icons next to it describe the app. The icons are rendered from `favicon.svg`; regenerate them if it changes.
+- `vite build` turns `src/sw.js` into `dist/sw.js`, filling in the list of every built file and a cache name hashed from it, so each deploy gets a fresh cache and drops the old one.
+- Page loads go to the network first and fall back to the cached app when offline, for every route. Other same-origin files come from the cache. `/api/*` and all cross-origin requests (Google, Dropbox, web fonts) are never cached, so Drive and Dropbox sync simply wait until you're back online.
+- The service worker is only registered in production builds, not under `npm run dev`. Try it with `npm run build && npm run preview`.
+
 ## Shortcuts
 
 | Key | Action | Key | Action |
