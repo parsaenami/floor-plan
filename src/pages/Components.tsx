@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, FileDown, Pencil, Plus, Trash2, Upload } from 'lucide-react'
+import { Copy, FileDown, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { CATEGORIES, type Category, type ComponentDef, type PresetShape } from '../model/types'
@@ -11,6 +11,7 @@ import { useComponents } from '../store/componentsStore'
 import { ConfirmModal, Field, NumberInput, Segmented, toast } from '../ui'
 import { ShapeDesigner } from './components/ShapeDesigner'
 import './components.css'
+import { DashHead } from './DashHead'
 import { SettingsButton } from '../settings/SettingsButton'
 
 type ShapeChoice = PresetShape | 'builtin' | 'drawn'
@@ -67,9 +68,6 @@ export function ComponentsPage() {
   return (
     <div className="comp">
       <header className="topbar page-bar">
-        <Link to="/" className="icon-btn" title="All plans">
-          <ArrowLeft size={16} />
-        </Link>
         <Link to="/" className="brand">
           <span className="brand-mark" />
           Floor Plan Studio
@@ -85,6 +83,7 @@ export function ComponentsPage() {
       </header>
 
       <main className="comp-main">
+        <DashHead />
         <section className="comp-builder">
           <div className="comp-builder-head">
             <div>

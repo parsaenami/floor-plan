@@ -4,10 +4,14 @@
 .comp-main {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 32px var(--page-pad) 64px;
+  padding: 40px var(--page-pad) 64px;
   display: flex;
   flex-direction: column;
   gap: 40px;
+}
+/* The flex gap already spaces the shared title row. */
+.comp-main > .dash-head {
+  margin-bottom: 0;
 }
 
 .comp-builder {

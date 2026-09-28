@@ -10,6 +10,7 @@ import { usePlans, type Template } from '../store/plansStore'
 import { ConfirmModal, Field, Modal, Segmented, toast } from '../ui'
 import { LegalFooter } from './Legal'
 import './dashboard.css'
+import { DashHead } from './DashHead'
 import { SettingsButton } from '../settings/SettingsButton'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -50,9 +51,6 @@ export function Dashboard() {
         </Link>
         <div className="spacer" />
         <SettingsButton />
-        <Link to="/components" className="btn ghost">
-          Components
-        </Link>
         <button className="btn" onClick={importFile}>
           <Upload size={14} /> Import
         </button>
@@ -62,16 +60,7 @@ export function Dashboard() {
       </header>
 
       <main className="dash-main">
-        <div className="dash-head">
-          <div>
-            <div className="eyebrow">Dashboard</div>
-            <h1>Plans</h1>
-          </div>
-          <div className="dash-stats mono">
-            <span>{String(plans.length).padStart(2, '0')} plans</span>
-            <span>{String(custom.length).padStart(2, '0')} custom components</span>
-          </div>
-        </div>
+        <DashHead />
 
         <div className="plan-grid">
           <button className="plan-card new" onClick={() => setCreating(true)}>
