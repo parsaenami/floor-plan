@@ -50,6 +50,7 @@ function LegalPage({ title, children }: { title: string; children: ReactNode }) 
 export function LegalFooter() {
   return (
     <footer className="legal-foot mono">
+      <Link to="/about">About</Link>
       <Link to="/privacy">Privacy</Link>
       <Link to="/terms">Terms</Link>
       {EMAIL && <a href={`mailto:${EMAIL}`}>Contact</a>}

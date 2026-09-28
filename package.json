@@ -3,6 +3,22 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "A free floor plan editor that runs in your browser.",
+  "author": {
+    "name": "Parsa Enami",
+    "email": "parsaenami@gmail.com",
+    "url": "https://epsilonpi.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parsaenami/floor-plan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/parsaenami/floor-plan/issues",
+    "email": "parsaenami@gmail.com"
+  },
+  "homepage": "https://github.com/parsaenami/floor-plan#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && tsc -p server/tsconfig.json && vite build",
