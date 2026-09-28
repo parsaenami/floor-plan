@@ -1,8 +1,8 @@
 import { Link } from 'react-router'
-import { ThemePicker } from '../ui'
 import { LegalFooter } from './Legal'
 import { author, bugs, license, version } from '../../package.json'
 import './legal.css'
+import { SettingsButton } from '../settings/SettingsButton'
 
 const EMAIL = author.email
 const SITE = author.url
@@ -12,13 +12,13 @@ const REPO = ISSUES.replace(/\/issues$/, '')
 export function AboutPage() {
   return (
     <div className="legal">
-      <header className="topbar">
+      <header className="topbar page-bar">
         <Link to="/" className="brand">
           <span className="brand-mark" />
           Floor Plan Studio
         </Link>
         <div className="spacer" />
-        <ThemePicker />
+        <SettingsButton />
         <Link to="/" className="btn">
           Open the app
         </Link>

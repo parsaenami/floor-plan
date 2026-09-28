@@ -360,6 +360,24 @@ a {
   border-top: 1px solid var(--line);
 }
 
+/* ---------- Page container ---------- */
+/* Header, content and footer of the scrolling pages share one centred column. */
+:root {
+  --page-max: 1240px;
+  --page-pad: 24px;
+}
+@media (max-width: 600px) {
+  :root {
+    --page-pad: 16px;
+  }
+}
+.topbar.page-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-inline: max(var(--page-pad), calc((100% - var(--page-max)) / 2 + var(--page-pad)));
+}
+
 /* ---------- Top bar ---------- */
 .topbar {
   height: var(--bar-h);
@@ -480,10 +498,6 @@ a {
     transform: rotate(360deg);
   }
 }
-.drive-btn.needs-auth,
-.drive-btn.error {
-  color: var(--muted);
-}
 .drive-lead {
   margin: 0;
   line-height: 1.5;
@@ -519,4 +533,47 @@ a {
 }
 .drive-advanced[open] > * + * {
   margin-top: 10px;
+}
+
+/* ---------- Settings ---------- */
+.settings-btn {
+  position: relative;
+}
+.settings-btn.alert::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-section + .settings-section {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.settings-section h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.drive-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.drive-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

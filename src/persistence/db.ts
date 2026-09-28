@@ -41,8 +41,10 @@ export const saveComponents = (defs: ComponentDef[]) => set(COMPONENTS_KEY, defs
 const SYNC_KEY = 'sync'
 
 export interface SyncMeta {
-  /** The user turned Drive sync on. */
+  /** The user turned sync on. */
   connected: boolean
+  /** Where to; missing means Google Drive, from before Dropbox was added. */
+  provider?: 'drive' | 'dropbox'
   /** OAuth client ID entered in the app, when not built in. */
   clientId?: string
   folderId?: string

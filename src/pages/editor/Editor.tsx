@@ -6,9 +6,7 @@ import { ExportModal } from '../../export/ExportModal'
 import { downloadJson, planFile, slug } from '../../persistence/importExport'
 import { useComponents, useDefMap } from '../../store/componentsStore'
 import { useEditor } from '../../store/editorStore'
-import { ThemePicker } from '../../ui'
 import { emitLocalChange } from '../../sync/events'
-import { DriveButton } from '../../sync/DriveButton'
 import { usePlans } from '../../store/plansStore'
 import { Canvas } from './Canvas'
 import { HelpOverlay, useHelp } from './help'
@@ -16,6 +14,7 @@ import { LibraryPanel } from './LibraryPanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { Toolbar } from './Toolbar'
 import './editor.css'
+import { SettingsButton } from '../../settings/SettingsButton'
 
 const SAVE_DELAY = 400
 
@@ -142,8 +141,7 @@ function EditorLayout() {
           <Ruler size={16} />
         </button>
         <div className="spacer" />
-        <ThemePicker />
-        <DriveButton compact />
+        <SettingsButton />
         <button className="icon-btn" title="Keyboard shortcuts (?)" onClick={() => useHelp.getState().set(true)}>
           <Keyboard size={16} />
         </button>

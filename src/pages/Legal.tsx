@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ThemePicker } from '../ui'
 import { FOLDER_NAME } from '../sync/drive'
 import './legal.css'
+import { SettingsButton } from '../settings/SettingsButton'
 
 /*
  * Privacy policy and terms, linked from Google's consent screen (Branding) and
@@ -25,13 +25,13 @@ function Contact() {
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="legal">
-      <header className="topbar">
+      <header className="topbar page-bar">
         <Link to="/" className="brand">
           <span className="brand-mark" />
           Floor Plan Studio
         </Link>
         <div className="spacer" />
-        <ThemePicker />
+        <SettingsButton />
         <Link to="/" className="btn">
           Open the app
         </Link>
@@ -63,14 +63,14 @@ export function PrivacyPage() {
     <LegalPage title="Privacy policy">
       <p>
         Floor Plan Studio is a floor plan editor that runs in your browser. It is run by {operator}. This page explains what the app stores,
-        where, and what it can see when you connect Google Drive. In short: there are no accounts, no database and no analytics, and your plans
+        where, and what it can see when you connect Google Drive or Dropbox. In short: there are no accounts, no database and no analytics, and your plans
         stay with you.
       </p>
 
       <h2>Your plans stay in your browser</h2>
       <p>
         Plans, custom components and settings (such as the theme) are saved in your browser’s own storage on your device. They are not sent to
-        this site’s server. Clearing this site’s data in your browser deletes them, so export plans or connect Google Drive if you want a copy
+        this site’s server. Clearing this site’s data in your browser deletes them, so export plans or connect Google Drive or Dropbox if you want a copy
         elsewhere.
       </p>
 
@@ -111,6 +111,28 @@ export function PrivacyPage() {
         and never used to train AI models, and no person reads it.
       </p>
 
+      <h2>Dropbox (optional)</h2>
+      <p>If you choose to connect Dropbox instead:</p>
+      <ul>
+        <li>
+          The app uses Dropbox’s <em>App folder</em> access. It can see and change only the <strong>Apps/{FOLDER_NAME}</strong> folder in your
+          Dropbox, and nothing else.
+        </li>
+        <li>It uses that access only to save your plans and custom components there and read them back.</li>
+        <li>
+          Sign-in happens between your browser and Dropbox; this site’s server is not involved. Dropbox gives the app a sign-in token, which is
+          kept in your browser’s storage on this device. It does not read your name, email address or profile.
+        </li>
+        <li>
+          <em>Disconnect</em> in the app’s settings revokes the token. You can also remove access in your{' '}
+          <a href="https://www.dropbox.com/account/connected_apps" target="_blank" rel="noreferrer">
+            Dropbox connected apps
+          </a>
+          . Files the app already saved stay in your Dropbox until you delete them.
+        </li>
+      </ul>
+      <p>Data from Dropbox is never sold, never used for advertising, never shared with anyone else and never used to train AI models.</p>
+
       <h2>Cookies and browser storage</h2>
       <p>The app does not use tracking or advertising cookies. It sets these only when you connect Google Drive:</p>
       <ul>
@@ -121,6 +143,7 @@ export function PrivacyPage() {
           <code>fps_drive</code>: the encrypted Google sign-in token described above. It lasts up to 180 days, or until you disconnect.
         </li>
       </ul>
+      <p>If you connect Dropbox, its sign-in token is kept in this site’s browser storage until you disconnect.</p>
 
       <h2>Other services</h2>
       <ul>
@@ -167,7 +190,7 @@ export function TermsPage() {
 
       <h2>Your content</h2>
       <p>
-        The plans and components you make are yours. They are stored in your browser, and in your own Google Drive if you connect it (see the{' '}
+        The plans and components you make are yours. They are stored in your browser, and in your own Google Drive or Dropbox if you connect one (see the{' '}
         <Link to="/privacy">privacy policy</Link>). You are responsible for keeping backups. Export plans you care about, because clearing your
         browser’s data deletes the local copy.
       </p>
@@ -181,7 +204,7 @@ export function TermsPage() {
       <h2>Acceptable use</h2>
       <p>
         Don’t use the app to break the law, and don’t try to disrupt the site, get around its security or overload it. When you connect Google
-        Drive, Google’s own terms also apply to your use of Drive.
+        Drive or Dropbox, that service’s own terms also apply to your use of it.
       </p>
 
       <h2>No warranty</h2>

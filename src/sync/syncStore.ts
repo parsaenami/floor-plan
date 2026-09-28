@@ -5,22 +5,23 @@ import { planFile, type PlanFile } from '../persistence/importExport'
 import { useComponents } from '../store/componentsStore'
 import { useEditor } from '../store/editorStore'
 import { usePlans } from '../store/plansStore'
-import { AuthError, ensureFolder, listFolder, readJson, trashFile, writeJson } from './drive'
+import { driveStore } from './drive'
+import { completeDropboxSignIn, dropboxAuth, dropboxStore, hasDropbox } from './dropbox'
 import { browserAuth, detectAuth, type Auth, type AuthMode } from './auth'
+import { AuthError, PROVIDER_NAME, type ProviderId, type RemoteStore } from './provider'
 import { onLocalChange, withoutEcho } from './events'
 import { mergeComponents, planActions, sameComponents, type ComponentsDoc } from './reconcile'
 
 export type SyncStatus =
-  /** Not connected to Drive. */
+  /** Not connected to any cloud storage. */
   | 'off'
   | 'idle'
   | 'syncing'
-  /** Connected, but Google access lapsed; the user has to connect again. */
+  /** Connected, but access lapsed; the user has to connect again. */
   | 'needs-auth'
   | 'error'
 
 const DEBOUNCE = 2500
-const COMPONENTS_FILE = 'components.floorplan.json'
 
 /** Messages for the ?drive=… result the server sign-in returns with. */
 const RETURN_ERRORS: Record<string, string> = {
@@ -33,26 +34,32 @@ interface SyncState {
   status: SyncStatus
   error: string | null
   lastSync: number | null
-  /** How sign-in works here; null until detected. */
+  /** The storage sync is connected to, or null when off. */
+  provider: ProviderId | null
+  /** How Google sign-in works here; null until detected. */
   mode: AuthMode | null
   init: () => Promise<void>
   /**
-   * Signs in and turns sync on. With the server this leaves the page and comes
-   * back; with the browser popup call it straight from a click. `clientId` is
-   * only for self-hosted copies without sign-in set up.
+   * Signs in and turns sync on. Dropbox and Google with the server leave the
+   * page and come back; the Google popup must be called straight from a click.
+   * `clientId` is only for self-hosted copies without Google sign-in set up.
    */
-  connect: (clientId?: string) => Promise<void>
+  connect: (provider: ProviderId, clientId?: string) => Promise<void>
   disconnect: () => Promise<void>
   syncNow: () => Promise<void>
 }
 
 let meta: SyncMeta = emptySyncMeta()
+let driveAuth: Auth | null = null
+const dbxAuth = hasDropbox ? dropboxAuth() : null
 let auth: Auth | null = null
 let timer: ReturnType<typeof setTimeout> | undefined
 let running: Promise<void> | null = null
 let again = false
 
 const persist = () => saveSyncMeta(meta)
+const providerOf = (m: SyncMeta): ProviderId => m.provider ?? 'drive'
+const storeFor = (p: ProviderId, access: string): RemoteStore => (p === 'dropbox' ? dropboxStore(access) : driveStore(access))
 
 /** Reads and removes the ?drive=… marker left by the server sign-in. */
 function takeReturnMarker(): string | null {
@@ -94,18 +101,17 @@ export const useSync = create<SyncState>((set, get) => {
   })
 
   async function run(access: string) {
-    const folderId = await ensureFolder(access, meta.folderId)
+    const remoteStore = storeFor(providerOf(meta), access)
+    const folderId = await remoteStore.ensureFolder(meta.folderId)
     if (folderId !== meta.folderId) {
       meta.folderId = folderId
-      // A new folder means nothing we remember is on Drive any more.
+      // A new folder means nothing we remember is there any more.
       meta.synced = {}
     }
-    const files = await listFolder(access, folderId)
+    const files = await remoteStore.list(folderId)
 
     /* Plans */
-    const remote = files
-      .filter((f) => f.appProperties?.fps === 'plan' && f.appProperties.planId)
-      .map((f) => ({ fileId: f.id, planId: f.appProperties!.planId, updatedAt: Number(f.appProperties!.updatedAt) || 0 }))
+    const remote = files.flatMap((f) => (f.kind === 'plan' ? [{ fileId: f.id, planId: f.planId, updatedAt: f.updatedAt }] : []))
     const plans = usePlans.getState().plans
     const open = useEditor.getState().plan?.id
     const actions = planActions(
@@ -120,11 +126,13 @@ export const useSync = create<SyncState>((set, get) => {
         case 'upload': {
           const plan = usePlans.getState().plans.find((p) => p.id === a.planId)
           if (!plan) break
-          const fileId = await writeJson(access, {
+          const fileId = await remoteStore.write({
             id: a.fileId,
-            name: `${plan.name}.floorplan.json`,
             folderId,
-            appProperties: { fps: 'plan', planId: plan.id, updatedAt: String(plan.updatedAt) },
+            kind: 'plan',
+            name: plan.name,
+            planId: plan.id,
+            updatedAt: plan.updatedAt,
             data: planFile(plan, custom),
           })
           meta.synced[plan.id] = { fileId, updatedAt: plan.updatedAt }
@@ -132,9 +140,9 @@ export const useSync = create<SyncState>((set, get) => {
           break
         }
         case 'download': {
-          const file = await readJson<PlanFile>(access, a.fileId)
+          const file = await remoteStore.read<PlanFile>(a.fileId)
           if (file?.type !== 'plan' || !file.plan) break
-          // Keep the Drive id and timestamp so both sides agree on the version.
+          // Keep the remote id and timestamp so both sides agree on the version.
           const plan: Plan = normalizePlan({ ...file.plan, id: a.planId, updatedAt: a.updatedAt })
           await withoutEcho(async () => {
             if (file.components?.length) await useComponents.getState().upsertMany(file.components, false)
@@ -149,7 +157,7 @@ export const useSync = create<SyncState>((set, get) => {
           delete meta.synced[a.planId]
           break
         case 'trash-remote':
-          await trashFile(access, a.fileId)
+          await remoteStore.trash(a.fileId)
           if (meta.synced[a.planId]?.fileId === a.fileId) delete meta.synced[a.planId]
           if (!usePlans.getState().plans.some((p) => p.id === a.planId)) delete meta.tombstones[a.planId]
           break
@@ -164,12 +172,12 @@ export const useSync = create<SyncState>((set, get) => {
     }
 
     /* Component library: one file, merged both ways. */
-    const libFile = files.find((f) => f.appProperties?.fps === 'components')
-    const theirs: ComponentsDoc = libFile ? await readJson<ComponentsDoc>(access, libFile.id) : { components: [], deleted: {} }
+    const libFile = files.find((f) => f.kind === 'components')
+    const theirs: ComponentsDoc = libFile ? await remoteStore.read<ComponentsDoc>(libFile.id) : { components: [], deleted: {} }
     const ours: ComponentsDoc = { components: useComponents.getState().custom, deleted: meta.deletedComponents }
     const merged = mergeComponents(ours, { components: theirs.components ?? [], deleted: theirs.deleted ?? {} })
     if (!libFile || !sameComponents(merged.components, theirs.components ?? []) || JSON.stringify(merged.deleted) !== JSON.stringify(theirs.deleted ?? {})) {
-      await writeJson(access, { id: libFile?.id, name: COMPONENTS_FILE, folderId, appProperties: { fps: 'components' }, data: merged })
+      await remoteStore.write({ id: libFile?.id, folderId, kind: 'components', data: merged })
     }
     if (!sameComponents(merged.components, useComponents.getState().custom)) {
       await useComponents.getState().replaceAll(merged.components)
@@ -180,7 +188,7 @@ export const useSync = create<SyncState>((set, get) => {
     set({ status: 'idle', error: null, lastSync: meta.lastSync })
   }
 
-  /** Runs a sync; with the server, a rejected token is renewed and the sync retried once. */
+  /** Runs a sync; where tokens renew on their own, a rejected one is renewed and the sync retried once. */
   async function attempt() {
     const access = await auth!.token()
     if (!access) return set({ status: 'needs-auth' })
@@ -188,7 +196,7 @@ export const useSync = create<SyncState>((set, get) => {
     try {
       await run(access)
     } catch (e) {
-      if (!(e instanceof AuthError) || auth!.mode !== 'server') throw e
+      if (!(e instanceof AuthError) || !auth!.renewable) throw e
       auth!.invalidate()
       const fresh = await auth!.token()
       if (!fresh) throw e
@@ -200,53 +208,68 @@ export const useSync = create<SyncState>((set, get) => {
     status: 'off',
     error: null,
     lastSync: null,
+    provider: null,
     mode: null,
 
     async init() {
       meta = await loadSyncMeta()
-      auth = await detectAuth(meta.clientId)
-      set({ mode: auth.mode, lastSync: meta.lastSync ?? null })
-      const marker = takeReturnMarker()
-      if (marker === 'connected') {
-        meta.connected = true
+      driveAuth = await detectAuth(meta.clientId)
+      set({ mode: driveAuth.mode, lastSync: meta.lastSync ?? null })
+      const back = async (provider: ProviderId) => {
+        meta = { ...emptySyncMeta(), clientId: meta.clientId, connected: true, provider }
         await persist()
-      } else if (marker) set({ error: RETURN_ERRORS[marker] ?? RETURN_ERRORS.error })
-      if (!meta.connected) return set({ status: 'off' })
+      }
+      const marker = takeReturnMarker()
+      if (marker === 'connected') await back('drive')
+      else if (marker) set({ error: RETURN_ERRORS[marker] ?? RETURN_ERRORS.error })
+      const dropbox = await completeDropboxSignIn()
+      if (dropbox === 'connected') await back('dropbox')
+      else if (dropbox) set({ error: dropbox })
+      auth = providerOf(meta) === 'dropbox' ? dbxAuth : driveAuth
+      if (!meta.connected || !auth) return set({ status: 'off', provider: null })
+      set({ provider: providerOf(meta) })
       await get().syncNow()
     },
 
-    async connect(clientId) {
-      if (!auth) return
+    async connect(provider, clientId) {
+      if (meta.connected && providerOf(meta) !== provider) {
+        return set({ error: `Disconnect ${PROVIDER_NAME[providerOf(meta)]} first.` })
+      }
       set({ error: null })
-      if (clientId?.trim()) {
+      if (provider === 'drive' && clientId?.trim()) {
         // Self-hosted copy without sign-in set up: use the entered client ID in the browser.
-        auth = browserAuth(clientId.trim())
+        driveAuth = browserAuth(clientId.trim())
         meta.clientId = clientId.trim()
         await persist()
-        set({ mode: auth.mode })
+        set({ mode: driveAuth.mode })
       }
-      if (auth.mode === 'server') {
-        // Save the plan being edited before the page leaves for Google.
+      auth = provider === 'dropbox' ? dbxAuth : driveAuth
+      if (!auth) return
+      if (auth.redirects) {
+        // Save the plan being edited before the page leaves for sign-in.
         const open = useEditor.getState().plan
         if (open) await usePlans.getState().upsert(open)
       }
       try {
         await auth.connect()
       } catch (e) {
-        return set({ status: meta.connected ? 'needs-auth' : 'off', error: e instanceof Error ? e.message : 'Google sign-in failed.' })
+        return set({ status: meta.connected ? 'needs-auth' : 'off', error: e instanceof Error ? e.message : 'Sign-in failed.' })
       }
       meta.connected = true
+      meta.provider = provider
       await persist()
+      set({ provider })
       await get().syncNow()
     },
 
     async disconnect() {
       clearTimeout(timer)
       await auth?.disconnect()
-      // Forget what is on Drive; files stay there and a later connect merges again.
+      // Forget what is stored remotely; files stay there and a later connect merges again.
       meta = { ...emptySyncMeta(), clientId: meta.clientId }
+      auth = null
       await persist()
-      set({ status: 'off', error: null, lastSync: null })
+      set({ status: 'off', error: null, lastSync: null, provider: null })
     },
 
     async syncNow() {

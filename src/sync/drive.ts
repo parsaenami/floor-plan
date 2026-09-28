@@ -4,19 +4,21 @@
  * lets the app see files it created, which is all it needs.
  */
 
+import { AuthError, type RemoteEntry, type RemoteStore } from './provider'
+
 const GIS_SRC = 'https://accounts.google.com/gsi/client'
 const SCOPE = 'https://www.googleapis.com/auth/drive.file'
 const API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3'
 export const FOLDER_NAME = 'Floor Plan Studio'
+export const COMPONENTS_FILE = 'components.floorplan.json'
 
 export interface Token {
   token: string
   expiresAt: number
 }
 
-/** The token was rejected or has expired; the user needs to sign in again. */
-export class AuthError extends Error {}
+export { AuthError }
 
 interface TokenResponse {
   access_token?: string
@@ -196,4 +198,30 @@ export async function trashFile(token: string, fileId: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ trashed: true }),
   })
+}
+
+/** Drive as a sync store. Files are tagged with appProperties, so their names are free to change. */
+export function driveStore(token: string): RemoteStore {
+  return {
+    ensureFolder: (known) => ensureFolder(token, known),
+    async list(folderId) {
+      return (await listFolder(token, folderId)).flatMap((f): RemoteEntry[] => {
+        const p = f.appProperties
+        if (p?.fps === 'plan' && p.planId) return [{ id: f.id, kind: 'plan' as const, planId: p.planId, updatedAt: Number(p.updatedAt) || 0 }]
+        if (p?.fps === 'components') return [{ id: f.id, kind: 'components' as const }]
+        return []
+      })
+    },
+    read: (id) => readJson(token, id),
+    write: (f) =>
+      writeJson(token, {
+        id: f.id,
+        folderId: f.folderId,
+        data: f.data,
+        ...(f.kind === 'plan'
+          ? { name: `${f.name}.floorplan.json`, appProperties: { fps: 'plan', planId: f.planId, updatedAt: String(f.updatedAt) } }
+          : { name: COMPONENTS_FILE, appProperties: { fps: 'components' } }),
+      }),
+    trash: (id) => trashFile(token, id),
+  }
 }

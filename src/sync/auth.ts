@@ -1,7 +1,7 @@
 import { loadGis, requestToken, revokeToken, type Token } from './drive'
 
 /**
- * How the app gets Google access tokens.
+ * How the app gets Google access tokens. (Dropbox has its own, in dropbox.ts.)
  * - `server`: the /api/drive endpoints (server/driveAuth.ts) keep the user signed
  *   in with a refresh token, and hand out access tokens without any popup.
  * - `browser`: no server; Google's popup gives one-hour tokens. Needs a client ID
@@ -12,6 +12,10 @@ export type AuthMode = 'server' | 'browser' | 'none'
 
 export interface Auth {
   mode: AuthMode
+  /** A rejected token can be replaced without the user, so sync retries once. */
+  renewable: boolean
+  /** Sign-in leaves the page and comes back. */
+  redirects: boolean
   /** A usable access token, renewed without the user where possible; null when they must connect again. */
   token(): Promise<string | null>
   /** Forgets the cached token after Drive rejected it. */
@@ -46,6 +50,8 @@ function serverAuth(): Auth {
   let cached: Token | null = null
   return {
     mode: 'server',
+    renewable: true,
+    redirects: true,
     async token() {
       if (cached && cached.expiresAt > Date.now()) return cached.token
       let r: Response
@@ -107,6 +113,8 @@ export function browserAuth(clientId: string): Auth {
   })
   return {
     mode: 'browser',
+    renewable: false,
+    redirects: false,
     async token() {
       return cached && cached.expiresAt > Date.now() ? cached.token : null
     },
@@ -129,6 +137,8 @@ export function browserAuth(clientId: string): Auth {
 function noAuth(): Auth {
   return {
     mode: 'none',
+    renewable: false,
+    redirects: false,
     token: async () => null,
     invalidate() {},
     async connect() {

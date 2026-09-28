@@ -7,10 +7,10 @@ import { downloadJson, parseFile, pickFile, planFile, slug } from '../persistenc
 import { PlanThumb } from '../render/PlanThumb'
 import { useComponents, useDefMap } from '../store/componentsStore'
 import { usePlans, type Template } from '../store/plansStore'
-import { ConfirmModal, Field, Modal, Segmented, ThemePicker, toast } from '../ui'
-import { DriveButton } from '../sync/DriveButton'
+import { ConfirmModal, Field, Modal, Segmented, toast } from '../ui'
 import { LegalFooter } from './Legal'
 import './dashboard.css'
+import { SettingsButton } from '../settings/SettingsButton'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -43,14 +43,13 @@ export function Dashboard() {
 
   return (
     <div className="dash">
-      <header className="topbar">
+      <header className="topbar page-bar">
         <Link to="/" className="brand">
           <span className="brand-mark" />
           Floor Plan Studio
         </Link>
         <div className="spacer" />
-        <ThemePicker />
-        <DriveButton />
+        <SettingsButton />
         <Link to="/components" className="btn ghost">
           Components
         </Link>

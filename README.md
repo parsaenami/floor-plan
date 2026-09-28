@@ -1,6 +1,6 @@
 # Floor Plan Studio
 
-A house plan editor in the style of real architectural drawings. Draw straight or curved walls, drop in doors, windows and furniture, draw your own components, and export print-ready sheets or GeoJSON. Choose black on white (Paper), white on black (Black) or a Blueprint theme, and sync your work through Google Drive.
+A house plan editor in the style of real architectural drawings. Draw straight or curved walls, drop in doors, windows and furniture, draw your own components, and export print-ready sheets or GeoJSON. Choose black on white (Paper), white on black (Black) or a Blueprint theme, and sync your work through Google Drive or Dropbox.
 
 ```sh
 npm install
@@ -27,11 +27,11 @@ npm start        # serve dist/ and the Drive sign-in endpoints (VPS)
 - **Component builder** (`/components`): draw a component in any shape. The designer has lines, polylines, polygons, rectangles, ellipses, arcs, pie slices, freehand strokes and text. It snaps to a grid and to existing points. You can reshape a shape by dragging its handles, set fill (none, paper or ink), dashed lines and line weight, and type exact sizes. Arcs have ¼, ½, ¾ and full-circle presets. **Fit size** shrinks the box to the drawing. Presets (rectangle, rounded, ellipse, L-shape) and every built-in symbol are still available, and switching to Draw starts from the current symbol so you can edit it.
 - **More than 70 built-in components**, including corner sofa, grand piano, king and bunk beds, kitchen island, range, dining set, corner shower, double vanity, corner desk, straight and spiral stairs, columns, radiators, elevator, car, tree and hot tub. There are also pocket, bifold and open-passage openings.
 - **Themes**: Paper, Black and Blueprint, from the swatches in the top bar. Exports can use any of them.
-- **Google Drive sync**: see below.
+- **Cloud sync** with Google Drive or Dropbox: see below. Both are set up in the settings dialog (the gear icon).
 - **Output view** (`/plan/:id/output`) shows the plan as planar GeoJSON (cm, y up), drawn with TanStack Charts `geoShape` and `geoIdentity().reflectY(true)`, with hover tooltips.
 - **Export** to PDF (vector), PNG or SVG on an A4/A3 sheet. You choose a scale from 1:20 to 1:200, and the sheet includes a title block, scale bar and north arrow.
 
-Data is saved automatically in the browser (IndexedDB). You can connect Google Drive to use your plans on other devices, or use JSON export for backups.
+Data is saved automatically in the browser (IndexedDB). You can connect Google Drive or Dropbox to use your plans on other devices, or use JSON export for backups.
 
 ## Google Drive sync
 
@@ -60,6 +60,21 @@ Users never see any of this. They only see a **Connect Google Drive** button.
 4. Give the server `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `SESSION_SECRET` (32+ random characters, e.g. `openssl rand -hex 32`). For local development, put them in `.env.local`; `.env.example` lists them all. Keep the secret out of git.
 
 Check that `https://<your-domain>/api/drive/config` returns `{"enabled":true}`.
+
+## Dropbox sync
+
+Dropbox works the same way as Drive, and one of the two can be connected at a time. Files go to the app's own folder, `Apps/Floor Plan Studio`. Dropbox files have no custom properties, so each plan's id and version are kept in its file name: `<name>.<planId>.<updatedAt>.floorplan.json`. A new version replaces the old file, and deleted files can be restored from Dropbox for at least 30 days.
+
+Sign-in runs entirely in the browser (OAuth with PKCE), so Dropbox needs no server and no secret, and users stay signed in: the refresh token is kept in the browser's local storage.
+
+Setup, once, by whoever hosts the app:
+
+1. In the [Dropbox App Console](https://www.dropbox.com/developers/apps), create an app with **Scoped access** and **App folder** access. Name it `Floor Plan Studio`, which becomes the folder name.
+2. Under *Permissions*, enable `files.metadata.read`, `files.content.read` and `files.content.write`.
+3. Under *Settings → OAuth 2 → Redirect URIs*, add `https://<your-domain>/`, and `http://localhost:5173/` for development. Keep *Allow public clients (Implicit Grant & PKCE)* on.
+4. Build with the app key in `VITE_DROPBOX_APP_KEY`. It is public, so it is fine in `.env.local` or the host's build variables.
+
+While the app is in development status, only you and up to 500 users can connect. Apply for production in the App Console to lift the limit.
 
 ## Deploying
 
@@ -107,7 +122,7 @@ Pinch or ⌘-scroll to zoom, and scroll to pan. Hold ⇧ to draw at a free angle
 - `src/pages`: dashboard, editor (canvas, tools, panels), component builder, and output view.
 - `src/export`: the print sheet and the PDF/PNG/SVG exporters. The exporters are loaded only when you export.
 - `src/theme`: theme colours for the drawing. The UI uses matching CSS variables in `global.css`.
-- `src/sync`: Google Drive sync. `auth.ts` picks how to sign in (the server, or a browser popup when there is no server), `drive.ts` makes the REST calls, `reconcile.ts` is the pure merge logic (unit-tested), and `syncStore.ts` runs the sync.
+- `src/sync`: cloud sync. `provider.ts` is the small storage interface sync runs against. `auth.ts` picks how to sign in to Google (the server, or a browser popup when there is no server), `drive.ts` makes the Drive calls, `dropbox.ts` has the Dropbox sign-in and calls, `reconcile.ts` is the pure merge logic (unit-tested), and `syncStore.ts` runs the sync.
 - `server`: `driveAuth.ts` is the sign-in handler, written against standard `Request`/`Response`. `index.ts` is the VPS server, which also serves `dist/`. `node.ts` adapts Node requests. The Vite dev server and `netlify/functions/drive.mts` use the same handler.
 
 All coordinates are in centimetres. Because the editor, the exports and the GeoJSON output all draw from the same primitives, they always match.

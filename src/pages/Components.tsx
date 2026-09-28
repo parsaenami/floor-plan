@@ -8,9 +8,10 @@ import { SymbolPreview } from '../render/SymbolPreview'
 import { PRESET_SHAPES, defaultArm, symbolFor } from '../symbols'
 import { BUILTIN_COMPONENTS } from '../symbols/library'
 import { useComponents } from '../store/componentsStore'
-import { ConfirmModal, Field, NumberInput, Segmented, ThemePicker, toast } from '../ui'
+import { ConfirmModal, Field, NumberInput, Segmented, toast } from '../ui'
 import { ShapeDesigner } from './components/ShapeDesigner'
 import './components.css'
+import { SettingsButton } from '../settings/SettingsButton'
 
 type ShapeChoice = PresetShape | 'builtin' | 'drawn'
 
@@ -65,7 +66,7 @@ export function ComponentsPage() {
 
   return (
     <div className="comp">
-      <header className="topbar">
+      <header className="topbar page-bar">
         <Link to="/" className="icon-btn" title="All plans">
           <ArrowLeft size={16} />
         </Link>
@@ -74,7 +75,7 @@ export function ComponentsPage() {
           Floor Plan Studio
         </Link>
         <div className="spacer" />
-        <ThemePicker />
+        <SettingsButton />
         <button className="btn ghost" onClick={importLibrary}>
           <Upload size={14} /> Import
         </button>
