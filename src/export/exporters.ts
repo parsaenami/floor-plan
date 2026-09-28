@@ -5,6 +5,7 @@ import type { Room } from '../geometry/rooms'
 import { downloadBlob } from '../persistence/importExport'
 import type { DefMap } from '../render/planGeometry'
 import { toDXF } from './dxf'
+import type { Units } from '../units/units'
 
 export function svgBlob(svg: string): Blob {
   return new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${svg}`], { type: 'image/svg+xml' })
@@ -57,6 +58,6 @@ export async function exportPdf(svg: string, widthMm: number, heightMm: number, 
 }
 
 /** 1:1 model-space drawing in centimetres; ignores the sheet options. */
-export async function exportDxf(plan: Plan, defs: DefMap, rooms: Room[], filename: string) {
-  downloadBlob(new Blob([toDXF(plan, defs, rooms)], { type: 'application/dxf' }), filename)
+export async function exportDxf(plan: Plan, defs: DefMap, rooms: Room[], units: Units, filename: string) {
+  downloadBlob(new Blob([toDXF(plan, defs, rooms, units)], { type: 'application/dxf' }), filename)
 }

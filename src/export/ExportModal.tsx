@@ -7,6 +7,7 @@ import type { DefMap } from '../render/planGeometry'
 import { Field, Modal, Segmented, toast } from '../ui'
 import { SCALES, Sheet, bestScale, fitsAt, sheetSize, type Orientation, type Paper, type SheetOptions } from './Sheet'
 import { THEMES, THEME_IDS, type ThemeId } from '../theme/themes'
+import { useUnitsStore } from '../units/unitsStore'
 import './export.css'
 
 type Format = 'pdf' | 'png' | 'svg' | 'dxf'
@@ -40,7 +41,7 @@ export function ExportModal({ plan, defs, onClose }: { plan: Plan; defs: DefMap;
     setBusy(format)
     try {
       const { exportDxf, exportPdf, exportPng, exportSvg } = await import('./exporters')
-      if (format === 'dxf') await exportDxf(plan, defs, rooms, `${slug(opts.title)}.dxf`)
+      if (format === 'dxf') await exportDxf(plan, defs, rooms, useUnitsStore.getState().units, `${slug(opts.title)}.dxf`)
       else {
         const svg = renderToStaticMarkup(<Sheet plan={plan} defs={defs} rooms={rooms} options={opts} />)
         const name = `${slug(opts.title)}-1-${opts.scale}`

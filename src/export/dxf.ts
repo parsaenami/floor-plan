@@ -1,6 +1,7 @@
 import type { Position } from 'geojson'
 import type { Plan, Pt } from '../model/types'
-import { formatArea, type Room } from '../geometry/rooms'
+import type { Room } from '../geometry/rooms'
+import { formatArea, type Units } from '../units/units'
 import { add, angleDeg, dist, mid, norm, perp, scale, sub } from '../geometry/vec'
 import type { DefMap } from '../render/planGeometry'
 import { toGeoJSON, type FeatureKind } from '../render/toGeoJSON'
@@ -19,7 +20,7 @@ const str = (s: string) => s.replace(/[^\x20-\x7e]/g, (c) => `\\U+${c.charCodeAt
  * ASCII DXF (R12 / AC1009) in model space at 1:1: one unit is one centimetre, y points up.
  * Outlines come from toGeoJSON, so curved walls and symbols arrive tessellated.
  */
-export function toDXF(plan: Plan, defs: DefMap, rooms: Room[]): string {
+export function toDXF(plan: Plan, defs: DefMap, rooms: Room[], units: Units = 'metric'): string {
   const out: string[] = []
   /** Appends group code / value pairs. */
   const g = (...kv: (string | number)[]) => {
@@ -57,10 +58,10 @@ export function toDXF(plan: Plan, defs: DefMap, rooms: Room[]): string {
   }
 
   for (const r of rooms) {
-    if (!r.label) text('ROOMS', r.centroid, 14, formatArea(r.area))
+    if (!r.label) text('ROOMS', r.centroid, 14, formatArea(r.area, units))
     else {
       text('ROOMS', r.label.point, 20, r.label.name.toUpperCase())
-      text('ROOMS', add(r.label.point, { x: 0, y: 26 }), 14, formatArea(r.area))
+      text('ROOMS', add(r.label.point, { x: 0, y: 26 }), 14, formatArea(r.area, units))
     }
   }
   for (const l of plan.roomLabels) if (!rooms.some((r) => r.label?.id === l.id)) text('ROOMS', l.point, 20, l.name.toUpperCase())

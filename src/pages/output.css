@@ -60,3 +60,6 @@
 .share-view {
   flex: 1;
 }
+.output .topbar .seg button {
+  white-space: nowrap;
+}

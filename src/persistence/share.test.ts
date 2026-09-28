@@ -29,6 +29,7 @@ describe('share links', () => {
       { id: 'i1', defId: 'c1', x: 0, y: 0, rotation: 0 },
       { id: 'i2', defId: 'c2', x: 0, y: 0, rotation: 0 },
     ]
+    plan.floors = [{ id: 'f0', name: 'Ground floor' }, { id: 'f1', name: 'Loft', walls: [], openings: [], items: [{ id: 'i3', defId: 'c2', x: 0, y: 0, rotation: 0 }], roomLabels: [], dimensions: [] }]
     const existing = new Map([
       ['c1', { ...chair, updatedAt: 5 }],
       ['c2', { ...chair, id: 'c2' }],
@@ -38,5 +39,6 @@ describe('share links', () => {
     const id = out.components[0].id
     expect(id).not.toBe('c2')
     expect(out.plan.items.map((i) => i.defId)).toEqual(['c1', id])
+    expect(out.plan.floors![1].items![0].defId).toBe(id)
   })
 })

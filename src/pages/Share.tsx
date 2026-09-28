@@ -6,7 +6,8 @@ import { decodeShare, mergeShared, shareUrl } from '../persistence/share'
 import { PlanThumb } from '../render/PlanThumb'
 import { useComponents, useDefMap } from '../store/componentsStore'
 import { usePlans } from '../store/plansStore'
-import { toast } from '../ui'
+import { Segmented, toast } from '../ui'
+import { floorView } from '../model/floors'
 import './output.css'
 
 export async function copyShareLink(plan: Plan, custom: ComponentDef[]) {
@@ -26,6 +27,7 @@ export function SharePage() {
   const defs = useDefMap()
   const loaded = useComponents((s) => s.loaded)
   const [shared, setShared] = useState<Shared | Error | null>(null)
+  const [floorId, setFloorId] = useState<string>()
 
   useEffect(() => {
     let live = true
@@ -73,12 +75,15 @@ export function SharePage() {
           <div className="output-title">{sharedPlan.name}</div>
         </div>
         <div className="spacer" />
+        {sharedPlan.floors && sharedPlan.floors.length > 1 && (
+          <Segmented value={floorId ?? sharedPlan.floorId!} options={sharedPlan.floors.map((f) => ({ value: f.id, label: f.name }))} onChange={setFloorId} />
+        )}
         <button className="btn primary" onClick={save} disabled={!loaded}>
           <CopyPlus size={14} /> Save a copy
         </button>
       </header>
       <div className="output-chart share-view">
-        <PlanThumb plan={sharedPlan} defs={view} width={1200} height={800} />
+        <PlanThumb plan={floorId ? floorView(sharedPlan, floorId) : sharedPlan} defs={view} width={1200} height={800} />
       </div>
     </div>
   )

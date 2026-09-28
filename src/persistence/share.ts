@@ -1,4 +1,4 @@
-import type { ComponentDef, Plan } from '../model/types'
+import type { ComponentDef, Item, Plan } from '../model/types'
 import { uid } from '../model/defaults'
 import { parseFile, planFile } from './importExport'
 
@@ -54,6 +54,7 @@ export function mergeShared(plan: Plan, components: ComponentDef[], existing: Ma
     ids.set(c.id, id)
     add.push({ ...c, id, builtin: false })
   }
-  const items = plan.items.map((i) => (ids.has(i.defId) ? { ...i, defId: ids.get(i.defId)! } : i))
-  return { plan: { ...plan, items }, components: add }
+  const remap = (items: Item[]) => items.map((i) => (ids.has(i.defId) ? { ...i, defId: ids.get(i.defId)! } : i))
+  const floors = plan.floors?.map((f) => (f.items ? { ...f, items: remap(f.items) } : f))
+  return { plan: { ...plan, items: remap(plan.items), ...(floors && { floors }) }, components: add }
 }
