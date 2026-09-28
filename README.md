@@ -30,6 +30,7 @@ npm start        # serve dist/ and the Drive sign-in endpoints (VPS)
 - **Cloud sync** with Google Drive or Dropbox: see below. Both are set up in the settings dialog (the gear icon).
 - **Output view** (`/plan/:id/output`) shows the plan as planar GeoJSON (cm, y up), drawn with TanStack Charts `geoShape` and `geoIdentity().reflectY(true)`, with hover tooltips.
 - **Export** to PDF (vector), PNG or SVG on an A4/A3 sheet. You choose a scale from 1:20 to 1:200, and the sheet includes a title block, scale bar and north arrow.
+- **DXF export** (R12) for AutoCAD, LibreCAD or QCAD: 1:1 model space in centimetres, y up, on WALLS, OPENINGS, FURNITURE, ROOMS and DIMENSIONS layers.
 
 Data is saved automatically in the browser (IndexedDB). You can connect Google Drive or Dropbox to use your plans on other devices, or use JSON export for backups.
 
