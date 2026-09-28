@@ -1,7 +1,6 @@
 import { memo, useMemo } from 'react'
 import type { Plan } from '../model/types'
 import type { Room } from '../geometry/rooms'
-import { formatArea } from '../geometry/rooms'
 import { openingFrame, wallGeometry } from '../geometry/walls'
 import { openingSymbol } from '../symbols/library'
 import { symbolFor } from '../symbols'
@@ -9,6 +8,8 @@ import { DimLine } from './DimLine'
 import { FALLBACK_DEF, itemSize, itemTransform, type DefMap } from './planGeometry'
 import { usePlanColors } from '../theme/themes'
 import { HaloText, MONO, Primitives } from './Primitives'
+import { formatArea } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 
 interface Props {
   plan: Plan
@@ -26,6 +27,7 @@ const pts = (p: { x: number; y: number }[]) => p.map((q) => `${q.x},${q.y}`).joi
 /** The plan drawing itself, shared by the editor, thumbnails and exports. */
 export const PlanLayers = memo(function PlanLayers({ plan, defs, rooms, unit, showDims, interactive = false }: Props) {
   const { ink } = usePlanColors()
+  const units = useUnits()
   const wallById = new Map(plan.walls.map((w) => [w.id, w]))
   const geo = useMemo(() => wallGeometry(plan.walls, plan.openings), [plan.walls, plan.openings])
   const labelled = new Set(rooms.map((r) => r.label?.id).filter(Boolean))
@@ -110,7 +112,7 @@ export const PlanLayers = memo(function PlanLayers({ plan, defs, rooms, unit, sh
             textAnchor="middle"
             fill={ink}
           >
-            {formatArea(r.area)}
+            {formatArea(r.area, units)}
           </text>
         ))}
       {plan.roomLabels.map((l) => {
@@ -133,7 +135,7 @@ export const PlanLayers = memo(function PlanLayers({ plan, defs, rooms, unit, sh
             </HaloText>
             {room && labelled.has(l.id) && (
               <HaloText x={l.point.x} y={l.point.y + unit * 13} size={unit * 8.5} unit={unit}>
-                {formatArea(room.area)}
+                {formatArea(room.area, units)}
               </HaloText>
             )}
           </g>
