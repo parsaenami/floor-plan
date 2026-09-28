@@ -11,6 +11,7 @@ import { round } from '../../geometry/vec'
 import { PlanLayers } from '../../render/PlanLayers'
 import { planBBox, type DefMap } from '../../render/planGeometry'
 import { useEditor, type Camera, type ToolId } from '../../store/editorStore'
+import { FloorTabs } from './FloorTabs'
 import { Overlay, PreviewLayer } from './Overlay'
 import { useShortcuts } from './shortcuts'
 import { arcTool, labelTool, measureTool, openingTool, roomTool, wallTool } from './tools/drawTools'
@@ -299,6 +300,8 @@ export function Canvas({ defs }: { defs: DefMap }) {
         <Overlay plan={plan} defs={defs} selection={selection} unit={unit} interactiveHandles={tool === 'select'} />
         <PreviewLayer plan={plan} preview={preview} unit={unit} />
       </svg>
+
+      <FloorTabs />
 
       <div className="canvas-status mono">
         <span className="status-hint">{HINTS[tool]}</span>

@@ -1,6 +1,7 @@
 import { createStore, del, entries, get, set } from 'idb-keyval'
 import type { ComponentDef, Plan } from '../model/types'
 import { DEFAULT_SETTINGS } from '../model/defaults'
+import { withFloors } from '../model/floors'
 
 const store = createStore('floor-plan-studio', 'kv')
 const PLAN_PREFIX = 'plan:'
@@ -8,7 +9,7 @@ const COMPONENTS_KEY = 'components'
 
 /** Fills fields added after a plan was saved, so old saves keep loading. */
 export function normalizePlan(p: Plan): Plan {
-  return {
+  return withFloors({
     ...p,
     walls: p.walls ?? [],
     openings: p.openings ?? [],
@@ -16,7 +17,7 @@ export function normalizePlan(p: Plan): Plan {
     roomLabels: p.roomLabels ?? [],
     dimensions: p.dimensions ?? [],
     settings: { ...DEFAULT_SETTINGS, ...p.settings },
-  }
+  })
 }
 
 export async function listPlans(): Promise<Plan[]> {

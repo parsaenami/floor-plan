@@ -1,4 +1,5 @@
 import type { Plan } from '../model/types'
+import { activeFloor } from '../model/floors'
 import type { Room } from '../geometry/rooms'
 import type { BBox } from '../geometry/vec'
 import { PlanLayers } from '../render/PlanLayers'
@@ -80,7 +81,7 @@ export function Sheet({ plan, defs, rooms, options }: { plan: Plan; defs: DefMap
   const tbY = h - MARGIN - TITLE_H
   const cells: [string, string, number][] = [
     ['PROJECT', options.title, 0.4],
-    ['DRAWING', 'FLOOR PLAN', 0.18],
+    ['DRAWING', (activeFloor(plan)?.name ?? 'Floor plan').toUpperCase(), 0.18],
     ['SCALE', `1:${options.scale}`, 0.12],
     ['AREA', `${total.toFixed(2)} m²`, 0.14],
     ['DATE', date, 0.16],
