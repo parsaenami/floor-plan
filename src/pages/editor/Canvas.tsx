@@ -1,8 +1,23 @@
-import { BringToFront, ClipboardCopy, Copy, FlipVertical2, Maximize, Minus, Plus, RotateCw, Scissors, SendToBack, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  BringToFront,
+  Check,
+  ClipboardCopy,
+  ClipboardPaste,
+  Copy,
+  FlipVertical2,
+  Maximize,
+  Minus,
+  Plus,
+  RotateCw,
+  Scissors,
+  SendToBack,
+  SquareDashedMousePointer,
+  Trash2,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Plan, Pt, SelectionRef } from '../../model/types'
 import { uid } from '../../model/defaults'
-import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, stackRoom, type ZMove } from '../../model/ops'
+import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, stackRoom, type ZMove } from '../../model/ops'
 import { flipAlign } from '../../geometry/walls'
 import { usePlanColors } from '../../theme/themes'
 import { detectRooms } from '../../geometry/rooms'
@@ -13,7 +28,7 @@ import { planBBox, type DefMap } from '../../render/planGeometry'
 import { useEditor, type Camera, type ToolId } from '../../store/editorStore'
 import { FloorTabs } from './FloorTabs'
 import { Overlay, PreviewLayer } from './Overlay'
-import { copyToClipboard, cutToClipboard } from './clipboard'
+import { copyToClipboard, cutToClipboard, hasClipboard, pasteClipboard } from './clipboard'
 import { useShortcuts } from './shortcuts'
 import { arcTool, labelTool, measureTool, openingTool, roomTool, wallTool } from './tools/drawTools'
 import { selectTool } from './tools/selectTool'
@@ -42,7 +57,7 @@ export function Canvas({ defs }: { defs: DefMap }) {
   const selection = useEditor((s) => s.selection)
   const setCamera = useEditor((s) => s.setCamera)
   const colors = usePlanColors()
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [menu, setMenu] = useState<{ at: Pt; canvas: boolean } | null>(null)
 
   const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -271,8 +286,9 @@ export function Canvas({ defs }: { defs: DefMap }) {
           if (tool !== 'select') return
           const info = pointerInfo(e)
           const st = useEditor.getState()
-          if (info.target && !st.selection.some((x) => x.kind === info.target!.kind && x.id === info.target!.id)) st.setSelection([info.target])
-          if (info.target || st.selection.length) setMenu(info.screen)
+          if (!info.target) st.setSelection([])
+          else if (!st.selection.some((x) => x.kind === info.target!.kind && x.id === info.target!.id)) st.setSelection([info.target])
+          setMenu({ at: info.screen, canvas: !info.target })
         }}
         onDragOver={(e) => {
           if (e.dataTransfer.types.includes(DEF_MIME)) {
@@ -316,7 +332,12 @@ export function Canvas({ defs }: { defs: DefMap }) {
         <span>{plan.settings.snap ? 'SNAP ON' : 'SNAP OFF'}</span>
       </div>
 
-      {menu && <ContextMenu at={menu} onClose={() => setMenu(null)} />}
+      {menu &&
+        (menu.canvas ? (
+          <CanvasMenu at={menu.at} onClose={() => setMenu(null)} fit={fit} paste={hasClipboard() ? () => pasteClipboard(toWorld(menu.at)) : undefined} />
+        ) : (
+          <SelectionMenu at={menu.at} onClose={() => setMenu(null)} />
+        ))}
 
       <div className="zoom-ctl">
         <button className="icon-btn" title="Zoom out (−)" onClick={() => zoomCenter(1 / 1.25)}>
@@ -334,10 +355,8 @@ export function Canvas({ defs }: { defs: DefMap }) {
   )
 }
 
-/** Right-click menu for the current selection. */
-function ContextMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
-  const plan = useEditor((s) => s.plan) as Plan
-  const sel = useEditor((s) => s.selection)
+/** Positions a right-click menu inside the canvas and closes it on outside click, Escape or wheel. */
+function MenuShell({ at, onClose, children }: { at: Pt; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState(at)
 
@@ -365,6 +384,54 @@ function ContextMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
     }
   }, [onClose])
 
+  return (
+    <div className="ctx-menu" ref={ref} style={{ left: pos.x, top: pos.y }} role="menu" onContextMenu={(e) => e.preventDefault()}>
+      {children}
+    </div>
+  )
+}
+
+/** Right-click menu for empty canvas. */
+function CanvasMenu({ at, onClose, fit, paste }: { at: Pt; onClose: () => void; fit: () => void; paste?: () => void }) {
+  const settings = useEditor((s) => s.plan!.settings)
+  const st = useEditor.getState()
+  const run = (f: () => void) => () => {
+    f()
+    onClose()
+  }
+  const check = (on: boolean) => (on ? <Check size={14} /> : <span className="ctx-pad" />)
+
+  return (
+    <MenuShell at={at} onClose={onClose}>
+      <button role="menuitem" disabled={!paste} onClick={paste && run(paste)}>
+        <ClipboardPaste size={14} /> Paste <kbd>⌘V</kbd>
+      </button>
+      <button role="menuitem" onClick={run(() => st.setSelection(selectAll(st.plan!)))}>
+        <SquareDashedMousePointer size={14} /> Select all <kbd>⌘A</kbd>
+      </button>
+      <hr />
+      <button role="menuitem" onClick={run(fit)}>
+        <Maximize size={14} /> Zoom to fit <kbd>0</kbd>
+      </button>
+      <button role="menuitemcheckbox" aria-checked={settings.snap} onClick={run(() => st.commit((p) => void (p.settings.snap = !p.settings.snap)))}>
+        {check(settings.snap)} Grid snapping <kbd>G</kbd>
+      </button>
+      <button
+        role="menuitemcheckbox"
+        aria-checked={settings.showDims}
+        onClick={run(() => st.commit((p) => void (p.settings.showDims = !p.settings.showDims)))}
+      >
+        {check(settings.showDims)} Room dimensions
+      </button>
+    </MenuShell>
+  )
+}
+
+/** Right-click menu for the current selection. */
+function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
+  const plan = useEditor((s) => s.plan) as Plan
+  const sel = useEditor((s) => s.selection)
+
   if (!sel.length) return null
   const st = useEditor.getState()
   const run = (f: () => void) => () => {
@@ -377,7 +444,7 @@ function ContextMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
   const z = (move: ZMove) => run(() => st.commit((p) => reorderItems(p, sel, move)))
 
   return (
-    <div className="ctx-menu" ref={ref} style={{ left: pos.x, top: pos.y }} role="menu" onContextMenu={(e) => e.preventDefault()}>
+    <MenuShell at={at} onClose={onClose}>
       {hasItems && (
         <>
           <button role="menuitem" disabled={!room.up} onClick={z('front')}>
@@ -436,6 +503,6 @@ function ContextMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
       >
         <Trash2 size={14} /> Delete <kbd>⌫</kbd>
       </button>
-    </div>
+    </MenuShell>
   )
 }
