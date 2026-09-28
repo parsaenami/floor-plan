@@ -29,6 +29,7 @@ export function selectTool(ctx: ToolContext, getDefs: () => DefMap): Tool {
   const st = () => useEditor.getState()
 
   function startHandle(e: PointerInfo, handle: Handle) {
+    if (handle.type.startsWith('item') && st().plan?.items.find((i) => i.id === handle.id)?.locked) return
     st().begin()
     drag = { type: 'handle', handle, start: e.raw }
   }

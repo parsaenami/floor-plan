@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { OpeningKind } from '../../model/types'
-import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, translateSelection } from '../../model/ops'
+import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, toggleLock, translateSelection } from '../../model/ops'
 import { flipAlign } from '../../geometry/walls'
 import { useEditor, type ToolId } from '../../store/editorStore'
 import { useHelp } from './help'
@@ -92,13 +92,18 @@ export function useShortcuts({
         st.setSelection(next)
         return
       }
+      if (mod && key === 'l') {
+        e.preventDefault()
+        if (sel.some((s) => s.kind === 'item')) st.commit((p) => toggleLock(p, sel))
+        return
+      }
       if (mod) return
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (!sel.length) return
         e.preventDefault()
+        // Locked items survive and stay selected.
         st.commit((p) => deleteSelection(p, sel))
-        st.setSelection([])
         return
       }
       if (e.key === 'Escape') {

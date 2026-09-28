@@ -70,7 +70,7 @@ export function translateSelection(plan: Plan, sel: SelectionRef[], delta: Pt) {
   }
   const itemIds = ids(sel, 'item')
   for (const it of plan.items) {
-    if (itemIds.has(it.id)) {
+    if (itemIds.has(it.id) && !it.locked) {
       it.x += delta.x
       it.y += delta.y
     }
@@ -94,7 +94,7 @@ export function deleteSelection(plan: Plan, sel: SelectionRef[]) {
   const dimIds = ids(sel, 'dimension')
   plan.walls = plan.walls.filter((w) => !wallIds.has(w.id))
   plan.openings = plan.openings.filter((o) => !openingIds.has(o.id) && !wallIds.has(o.wallId))
-  plan.items = plan.items.filter((i) => !itemIds.has(i.id))
+  plan.items = plan.items.filter((i) => !itemIds.has(i.id) || i.locked)
   plan.roomLabels = plan.roomLabels.filter((l) => !labelIds.has(l.id))
   plan.dimensions = plan.dimensions.filter((d) => !dimIds.has(d.id))
 }
@@ -139,7 +139,7 @@ export function duplicateSelection(plan: Plan, sel: SelectionRef[], offset: Pt):
 /** Rotates selected items about their own centres, or a group about its centre. */
 export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
   const itemIds = ids(sel, 'item')
-  const items = plan.items.filter((i) => itemIds.has(i.id))
+  const items = plan.items.filter((i) => itemIds.has(i.id) && !i.locked)
   if (!items.length) return
   const norm = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180
   if (items.length === 1) {
@@ -152,6 +152,21 @@ export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
     it.x = p.x
     it.y = p.y
     it.rotation = norm(it.rotation + deg)
+  }
+}
+
+/** True when the selection has items and all of them are locked. */
+export function allLocked(plan: Plan, sel: SelectionRef[]) {
+  const items = plan.items.filter((i) => ids(sel, 'item').has(i.id))
+  return items.length > 0 && items.every((i) => i.locked)
+}
+
+/** Locks the selected items, or unlocks them if all are already locked. */
+export function toggleLock(plan: Plan, sel: SelectionRef[]) {
+  const unlock = allLocked(plan, sel)
+  for (const it of plan.items.filter((i) => ids(sel, 'item').has(i.id))) {
+    if (unlock) delete it.locked
+    else it.locked = true
   }
 }
 

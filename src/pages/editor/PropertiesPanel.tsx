@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp, BringToFront, Copy, FlipHorizontal2, FlipVertical2, RotateCw, SendToBack, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, BringToFront, Copy, FlipHorizontal2, FlipVertical2, Lock, LockOpen, RotateCw, SendToBack, Trash2 } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import type { Item, Opening, OpeningKind, Plan, SelectionRef, Wall } from '../../model/types'
 import { OPENING_LABEL } from '../../model/defaults'
 import {
+  allLocked,
   clampOpenings,
   deleteSelection,
   duplicateSelection,
@@ -11,6 +12,7 @@ import {
   reorderItems,
   rotateSelection,
   stackRoom,
+  toggleLock,
   type ZMove,
 } from '../../model/ops'
 import { detectRooms, formatArea } from '../../geometry/rooms'
@@ -60,12 +62,19 @@ function Arrange({ sel }: { sel: SelectionRef[] }) {
 }
 
 function Actions({ sel }: { sel: SelectionRef[] }) {
+  const plan = useEditor((s) => s.plan) as Plan
   const hasItems = sel.some((s) => s.kind === 'item')
+  const locked = allLocked(plan, sel)
   return (
     <div className="props-actions">
       {hasItems && (
         <button className="btn sm" onClick={() => st().commit((p) => rotateSelection(p, sel, 90))} title="Rotate 90° (R)">
           <RotateCw size={13} /> Rotate
+        </button>
+      )}
+      {hasItems && (
+        <button className="btn sm" aria-pressed={locked} onClick={() => st().commit((p) => toggleLock(p, sel))} title="Lock in place (⌘L)">
+          {locked ? <LockOpen size={13} /> : <Lock size={13} />} {locked ? 'Unlock' : 'Lock'}
         </button>
       )}
       <button
@@ -84,7 +93,6 @@ function Actions({ sel }: { sel: SelectionRef[] }) {
         title="Delete (⌫)"
         onClick={() => {
           st().commit((p) => deleteSelection(p, sel))
-          st().setSelection([])
         }}
       >
         <Trash2 size={13} /> Delete
