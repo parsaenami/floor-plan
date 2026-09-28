@@ -52,6 +52,8 @@ export interface Item {
   w?: number
   d?: number
   label?: string
+  /** Locked items can be selected but not moved, rotated, resized or deleted. */
+  locked?: boolean
 }
 
 export interface RoomLabel {

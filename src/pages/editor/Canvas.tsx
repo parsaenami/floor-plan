@@ -5,6 +5,8 @@ import {
   ClipboardPaste,
   Copy,
   FlipVertical2,
+  Lock,
+  LockOpen,
   Maximize,
   Minus,
   Plus,
@@ -17,7 +19,7 @@ import {
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Plan, Pt, SelectionRef } from '../../model/types'
 import { uid } from '../../model/defaults'
-import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, stackRoom, type ZMove } from '../../model/ops'
+import { allLocked, deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, stackRoom, toggleLock, type ZMove } from '../../model/ops'
 import { flipAlign } from '../../geometry/walls'
 import { usePlanColors } from '../../theme/themes'
 import { detectRooms } from '../../geometry/rooms'
@@ -439,6 +441,7 @@ function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
     onClose()
   }
   const hasItems = sel.some((s) => s.kind === 'item')
+  const unlock = allLocked(plan, sel)
   const walls = sel.filter((s) => s.kind === 'wall')
   const room = stackRoom(plan, sel)
   const z = (move: ZMove) => run(() => st.commit((p) => reorderItems(p, sel, move)))
@@ -462,6 +465,9 @@ function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
           <hr />
           <button role="menuitem" onClick={run(() => st.commit((p) => rotateSelection(p, sel, 90)))}>
             <RotateCw size={14} /> Rotate 90° <kbd>R</kbd>
+          </button>
+          <button role="menuitem" onClick={run(() => st.commit((p) => toggleLock(p, sel)))}>
+            {unlock ? <LockOpen size={14} /> : <Lock size={14} />} {unlock ? 'Unlock' : 'Lock'} <kbd>⌘L</kbd>
           </button>
         </>
       )}
@@ -498,7 +504,6 @@ function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
         role="menuitem"
         onClick={run(() => {
           st.commit((p) => deleteSelection(p, sel))
-          st.setSelection([])
         })}
       >
         <Trash2 size={14} /> Delete <kbd>⌫</kbd>

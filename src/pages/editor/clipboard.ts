@@ -41,7 +41,6 @@ export function cutToClipboard() {
   const st = useEditor.getState()
   const sel = st.selection
   st.commit((p) => deleteSelection(p, sel))
-  st.setSelection([])
   return true
 }
 

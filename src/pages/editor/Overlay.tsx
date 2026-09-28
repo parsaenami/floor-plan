@@ -54,6 +54,19 @@ function Handle({ p, unit, data, cursor, round }: { p: Pt; unit: number; data: R
   )
 }
 
+/** Small padlock centred on p, marking a locked item. */
+function LockGlyph({ p, unit }: { p: Pt; unit: number }) {
+  const c = usePlanColors()
+  const u = unit
+  return (
+    <g pointerEvents="none" transform={`translate(${p.x} ${p.y})`} stroke={c.ink} strokeWidth={u}>
+      <circle r={8 * u} fill={c.paper} />
+      <path d={`M ${-2.5 * u} ${-u} v ${-2 * u} a ${2.5 * u} ${2.5 * u} 0 0 1 ${5 * u} 0 v ${2 * u}`} fill="none" />
+      <rect x={-4 * u} y={-u} width={8 * u} height={5.5 * u} rx={u} fill={c.ink} />
+    </g>
+  )
+}
+
 /** Point on a wall at arc length s, pushed sideways by `offset`. */
 function sidePoint(w: Wall, s: number, offset: number): Pt {
   const f = wallFrame(w, s)
@@ -106,7 +119,8 @@ export function Overlay({
             return (
               <g key={s.id}>
                 <Outline points={corners} unit={unit} />
-                {single && (
+                {it.locked && <LockGlyph p={itemLocalToWorld(it, w, d, { x: w, y: 0 })} unit={unit} />}
+                {single && !it.locked && (
                   <>
                     {[-1, 0, 1].flatMap((sx) =>
                       [-1, 0, 1]
