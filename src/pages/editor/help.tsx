@@ -25,6 +25,7 @@ const GROUPS: [string, [string, string][]][] = [
     'Edit',
     [
       ['⌘Z / ⇧⌘Z', 'Undo / redo'],
+      ['⌘C / ⌘X / ⌘V', 'Copy / cut / paste'],
       ['⌘D', 'Duplicate'],
       ['⌘A', 'Select all'],
       ['Delete', 'Delete selection'],

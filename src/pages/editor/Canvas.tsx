@@ -1,4 +1,4 @@
-import { BringToFront, Copy, FlipVertical2, Maximize, Minus, Plus, RotateCw, SendToBack, Trash2 } from 'lucide-react'
+import { BringToFront, ClipboardCopy, Copy, FlipVertical2, Maximize, Minus, Plus, RotateCw, Scissors, SendToBack, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Plan, Pt, SelectionRef } from '../../model/types'
 import { uid } from '../../model/defaults'
@@ -12,6 +12,7 @@ import { PlanLayers } from '../../render/PlanLayers'
 import { planBBox, type DefMap } from '../../render/planGeometry'
 import { useEditor, type Camera, type ToolId } from '../../store/editorStore'
 import { Overlay, PreviewLayer } from './Overlay'
+import { copyToClipboard, cutToClipboard } from './clipboard'
 import { useShortcuts } from './shortcuts'
 import { arcTool, labelTool, measureTool, openingTool, roomTool, wallTool } from './tools/drawTools'
 import { selectTool } from './tools/selectTool'
@@ -47,6 +48,7 @@ export function Canvas({ defs }: { defs: DefMap }) {
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [preview, setPreview] = useState<Preview | null>(null)
   const [cursor, setCursor] = useState<Pt | null>(null)
+  const cursorRef = useRef<Pt | null>(null)
   const [spaceDown, setSpaceDown] = useState(false)
   const panRef = useRef<{ screen: Pt; cam: Camera } | null>(null)
   const defsRef = useRef(defs)
@@ -164,7 +166,7 @@ export function Canvas({ defs }: { defs: DefMap }) {
     return () => active.cancel?.()
   }, [tool, tools])
 
-  useShortcuts({ tools, fit, zoomCenter, setSpaceDown })
+  useShortcuts({ tools, fit, zoomCenter, setSpaceDown, cursor: cursorRef })
 
   function pointerInfo(e: React.PointerEvent | React.MouseEvent): PointerInfo {
     const screen = toScreen(e.clientX, e.clientY)
@@ -218,7 +220,7 @@ export function Canvas({ defs }: { defs: DefMap }) {
       return
     }
     const info = pointerInfo(e)
-    setCursor(info.raw)
+    setCursor((cursorRef.current = info.raw))
     tools[tool].move?.(info)
   }
 
@@ -261,7 +263,7 @@ export function Canvas({ defs }: { defs: DefMap }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onPointerLeave={() => setCursor(null)}
+        onPointerLeave={() => setCursor((cursorRef.current = null))}
         onDoubleClick={(e) => tools[tool].dblclick?.(pointerInfo(e))}
         onContextMenu={(e) => {
           e.preventDefault()
@@ -406,6 +408,12 @@ function ContextMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
           <FlipVertical2 size={14} /> Flip thickness side <kbd>F</kbd>
         </button>
       )}
+      <button role="menuitem" onClick={run(copyToClipboard)}>
+        <ClipboardCopy size={14} /> Copy <kbd>⌘C</kbd>
+      </button>
+      <button role="menuitem" onClick={run(cutToClipboard)}>
+        <Scissors size={14} /> Cut <kbd>⌘X</kbd>
+      </button>
       <button
         role="menuitem"
         onClick={run(() => {
