@@ -1,0 +1,6 @@
+# Caddy in front of server/index.ts. Caddy gets and renews the HTTPS
+# certificate on its own; point your domain's DNS at the VPS first.
+plans.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}

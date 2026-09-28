@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Client-side routes (/plan/…, /components) all load the app. The Drive
+# function claims /api/drive/* through its own path config.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,22 @@
+# systemd unit for the VPS server. Install:
+#   sudo cp deploy/floor-plan-studio.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now floor-plan-studio
+[Unit]
+Description=Floor Plan Studio
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/srv/floor-plan-studio
+# Secrets live here, readable only by root and the service user (chmod 640).
+EnvironmentFile=/etc/floor-plan-studio.env
+ExecStart=/usr/bin/node server/index.ts
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
