@@ -9,6 +9,7 @@ import { useComponents, useDefMap } from '../store/componentsStore'
 import { usePlans, type Template } from '../store/plansStore'
 import { ConfirmModal, Field, Modal, Segmented, ThemePicker, toast } from '../ui'
 import { DriveButton } from '../sync/DriveButton'
+import { LegalFooter } from './Legal'
 import './dashboard.css'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -97,6 +98,7 @@ export function Dashboard() {
         {loaded && plans.length === 0 && (
           <p className="dash-hint mono">No plans yet. Start blank, or try the sample apartment to see how things work.</p>
         )}
+        <LegalFooter />
       </main>
 
       {creating && (

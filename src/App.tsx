@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { Dashboard } from './pages/Dashboard'
 import { ComponentsPage } from './pages/Components'
 import { EditorPage } from './pages/editor/Editor'
+import { PrivacyPage, TermsPage } from './pages/Legal'
 import { usePlans } from './store/plansStore'
 import { useComponents } from './store/componentsStore'
 import { Toaster } from './ui'
@@ -28,6 +29,8 @@ export function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/components" element={<ComponentsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/plan/:id" element={<EditorPage />} />
         <Route
           path="/plan/:id/output"

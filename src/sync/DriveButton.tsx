@@ -1,5 +1,6 @@
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { Field, Modal } from '../ui'
 import { FOLDER_NAME } from './drive'
 import { useSync, type SyncStatus } from './syncStore'
@@ -149,7 +150,10 @@ function DriveDialog({ onClose }: { onClose: () => void }) {
         <p className="drive-lead">
           Keep your plans in Google Drive and continue from any device. The app creates a <strong>{FOLDER_NAME}</strong> folder and can only see
           files it made there.
-          {mode === 'server' && ' You will be taken to Google to allow access, then brought straight back.'}
+          {mode === 'server' && ' You will be taken to Google to allow access, then brought straight back.'}{' '}
+          <Link to="/privacy" onClick={onClose}>
+            Privacy
+          </Link>
         </p>
       )}
       {error && <p className="drive-error">{error}</p>}

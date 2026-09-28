@@ -49,7 +49,13 @@ Connecting Drive creates a **Floor Plan Studio** folder in your Drive. Each plan
 Users never see any of this. They only see a **Connect Google Drive** button.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Google Drive API**.
-2. Set up the **OAuth consent screen**: an app name, a support email and the `drive.file` scope. While the app is in *Testing*, only listed test users (up to 100) can connect, and Google makes them reconnect every 7 days. Publishing removes both limits. `drive.file` is a non-sensitive scope, so publishing should not need Google's security review. Google asks for a home page and privacy policy link.
+2. Set up the **OAuth consent screen**: an app name, a support email and the `drive.file` scope. While the app is in *Testing*, only listed test users (up to 100) can connect, and Google makes them reconnect every 7 days. Publishing removes both limits. `drive.file` is a non-sensitive scope, so publishing should not need Google's security review. Before you publish, fill in *Branding*:
+   - home page: `https://<your-domain>/`
+   - privacy policy: `https://<your-domain>/privacy`
+   - terms of service: `https://<your-domain>/terms`
+   - authorised domain: `<your-domain>`, verified in Google Search Console
+
+   The app serves both pages. Set `VITE_CONTACT_EMAIL`, and optionally `VITE_OPERATOR_NAME`, so they show who to contact. These values are read at build time.
 3. Create an **OAuth client ID** of type *Web application*. Under *Authorised redirect URIs*, add `https://<your-domain>/api/drive/callback`. For local development, also add `http://localhost:5173/api/drive/callback`.
 4. Give the server `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `SESSION_SECRET` (32+ random characters, e.g. `openssl rand -hex 32`). For local development, put them in `.env.local`; `.env.example` lists them all. Keep the secret out of git.
 
