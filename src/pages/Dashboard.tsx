@@ -1,4 +1,4 @@
-import { Copy, FileDown, Pencil, Plus, Trash2, Upload } from 'lucide-react'
+import { Copy, FileDown, Link2, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { Plan } from '../model/types'
@@ -14,6 +14,7 @@ import { LegalFooter } from './Legal'
 import './dashboard.css'
 import { DashHead } from './DashHead'
 import { SettingsButton } from '../settings/SettingsButton'
+import { copyShareLink } from './Share'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -81,6 +82,7 @@ export function Dashboard() {
                 toast('Plan duplicated')
               }}
               onExport={() => downloadJson(planFile(p, custom), `${slug(p.name)}.json`)}
+              onShare={() => copyShareLink(p, custom)}
               onDelete={() => setDeleting(p)}
             />
           ))}
@@ -130,6 +132,7 @@ function PlanCard({
   onRename,
   onDuplicate,
   onExport,
+  onShare,
   onDelete,
 }: {
   plan: Plan
@@ -138,6 +141,7 @@ function PlanCard({
   onRename: () => void
   onDuplicate: () => void
   onExport: () => void
+  onShare: () => void
   onDelete: () => void
 }) {
   const rooms = useMemo(() => detectRooms(plan.walls, plan.roomLabels), [plan.walls, plan.roomLabels])
@@ -166,6 +170,9 @@ function PlanCard({
           </button>
           <button className="icon-btn" title="Export JSON" onClick={onExport}>
             <FileDown size={14} />
+          </button>
+          <button className="icon-btn" title="Copy share link" onClick={onShare}>
+            <Link2 size={14} />
           </button>
           <button className="icon-btn" title="Delete" onClick={onDelete}>
             <Trash2 size={14} />

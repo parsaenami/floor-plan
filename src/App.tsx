@@ -5,6 +5,7 @@ import { ComponentsPage } from './pages/Components'
 import { EditorPage } from './pages/editor/Editor'
 import { PrivacyPage, TermsPage } from './pages/Legal'
 import { AboutPage } from './pages/About'
+import { SharePage } from './pages/Share'
 import { usePlans } from './store/plansStore'
 import { useComponents } from './store/componentsStore'
 import { Toaster } from './ui'
@@ -33,6 +34,7 @@ export function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/share" element={<SharePage />} />
         <Route path="/plan/:id" element={<EditorPage />} />
         <Route
           path="/plan/:id/output"
