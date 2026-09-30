@@ -207,6 +207,42 @@
   border: 1px solid var(--ink);
   background: var(--paper);
 }
+.floor-tabs {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  max-width: calc(100% - 24px);
+  overflow-x: auto;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+.floor-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+input.floor-tab {
+  width: 120px;
+  outline: none;
+  cursor: text;
+}
+.floor-tab:hover {
+  background: var(--hover);
+}
+.floor-tab[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
 .zoom-val {
   width: 48px;
   text-align: center;

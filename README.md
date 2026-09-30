@@ -30,6 +30,7 @@ npm start        # serve dist/ and the Drive sign-in endpoints (VPS)
 - **Cloud sync** with Google Drive or Dropbox: see below. Both are set up in the settings dialog (the gear icon).
 - **Output view** (`/plan/:id/output`) shows the plan as planar GeoJSON (cm, y up), drawn with TanStack Charts `geoShape` and `geoIdentity().reflectY(true)`, with hover tooltips.
 - **Export** to PDF (vector), PNG or SVG on an A4/A3 sheet. You choose a scale from 1:20 to 1:200, and the sheet includes a title block, scale bar and north arrow.
+- **DXF export** (R12) for AutoCAD, LibreCAD or QCAD: 1:1 model space in centimetres, y up, on WALLS, OPENINGS, FURNITURE, ROOMS and DIMENSIONS layers.
 
 Data is saved automatically in the browser (IndexedDB). You can connect Google Drive or Dropbox to use your plans on other devices, or use JSON export for backups.
 
@@ -93,6 +94,15 @@ npm start                                   # or use the systemd unit below
 - `deploy/floor-plan-studio.service` keeps the server running with systemd, reading `/etc/floor-plan-studio.env`.
 - `deploy/Caddyfile` puts Caddy in front of it for automatic HTTPS. Replace the domain with yours.
 - The server listens on `127.0.0.1:3000`; set `PORT` and `HOST` to change that.
+
+## Offline and install
+
+Production builds are an installable app (use *Install* in the browser's address bar, or *Add to Home Screen* on a phone) and keep working offline, since plans live in the browser anyway.
+
+- `public/manifest.webmanifest` and the PNG icons next to it describe the app. The icons are rendered from `favicon.svg`; regenerate them if it changes.
+- `vite build` turns `src/sw.js` into `dist/sw.js`, filling in the list of every built file and a cache name hashed from it, so each deploy gets a fresh cache and drops the old one.
+- Page loads go to the network first and fall back to the cached app when offline, for every route. Other same-origin files come from the cache. `/api/*` and all cross-origin requests (Google, Dropbox, web fonts) are never cached, so Drive and Dropbox sync simply wait until you're back online.
+- The service worker is only registered in production builds, not under `npm run dev`. Try it with `npm run build && npm run preview`.
 
 ## Shortcuts
 

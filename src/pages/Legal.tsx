@@ -73,6 +73,10 @@ export function PrivacyPage() {
         this site’s server. Clearing this site’s data in your browser deletes them, so export plans or connect Google Drive or Dropbox if you want a copy
         elsewhere.
       </p>
+      <p>
+        A share link contains the whole plan inside the link itself, after the #, which browsers do not send to the server. Anyone you give the link
+        to can see the plan.
+      </p>
 
       <h2>Google Drive (optional)</h2>
       <p>If you choose to connect Google Drive:</p>

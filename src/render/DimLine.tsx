@@ -1,6 +1,8 @@
 import type { Pt } from '../model/types'
 import { add, angleDeg, dist, mid, norm, perp, scale, sub } from '../geometry/vec'
 import { usePlanColors } from '../theme/themes'
+import { formatLength } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 import { HaloText } from './Primitives'
 
 interface Props {
@@ -14,11 +16,10 @@ interface Props {
   label?: string
 }
 
-export const formatLength = (cm: number) => `${Math.round(cm)}`
-
 /** Architectural dimension line with 45° ticks and the length written above it. */
 export function DimLine({ a, b, offset, unit, extensions = false, label }: Props) {
   const { ink } = usePlanColors()
+  const units = useUnits()
   const l = dist(a, b)
   if (l < 1) return null
   const d = norm(sub(b, a))
@@ -33,7 +34,7 @@ export function DimLine({ a, b, offset, unit, extensions = false, label }: Props
   // Text sits on the outer side of the line, away from the measured edge.
   const textSide = offset >= 0 ? 1 : -1
   const tp = add(mid(pa, pb), scale(n, textSide * 6 * unit))
-  const text = label ?? formatLength(l)
+  const text = label ?? formatLength(l, units)
   const fontSize = unit * 8.5
   const gap = 2 * unit
   return (

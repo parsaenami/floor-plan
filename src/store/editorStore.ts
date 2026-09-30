@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { OpeningKind, Plan, SelectionRef } from '../model/types'
+import { switchFloor } from '../model/floors'
 
 export type ToolId = 'select' | 'wall' | 'arc' | 'room' | 'opening' | 'measure' | 'label' | 'pan'
 
@@ -35,6 +36,8 @@ interface EditorState {
   cancel: () => void
   undo: () => void
   redo: () => void
+  /** Shows another floor; not an undo step. */
+  setFloor: (id: string) => void
   setTool: (tool: ToolId, openingKind?: OpeningKind) => void
   setSelection: (sel: SelectionRef[]) => void
   setCamera: (camera: Camera) => void
@@ -133,6 +136,14 @@ export const useEditor = create<EditorState>((set, get) => ({
     if (!future.length || !plan) return
     const next = future[0]
     set({ plan: next, past: [...past, plan], future: future.slice(1), selection: pruneSelection(next, get().selection) })
+  },
+
+  setFloor(id) {
+    const { plan } = get()
+    if (!plan || plan.floorId === id) return
+    const next = { ...plan }
+    switchFloor(next, id)
+    set({ plan: next, txBase: null, selection: [] })
   },
 
   setTool(tool, openingKind) {

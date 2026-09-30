@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import type { OpeningKind } from '../../model/types'
-import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, translateSelection } from '../../model/ops'
+import type { OpeningKind, Pt } from '../../model/types'
+import { deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, toggleLock, translateSelection } from '../../model/ops'
 import { flipAlign } from '../../geometry/walls'
 import { useEditor, type ToolId } from '../../store/editorStore'
+import { copyToClipboard, cutToClipboard, pasteClipboard } from './clipboard'
 import { useHelp } from './help'
 import type { Tool } from './tools/types'
 
@@ -43,11 +44,14 @@ export function useShortcuts({
   fit,
   zoomCenter,
   setSpaceDown,
+  cursor,
 }: {
   tools: Record<ToolId, Tool>
   fit: () => void
   zoomCenter: (f: number) => void
   setSpaceDown: (v: boolean) => void
+  /** World position of the pointer while it is over the canvas. */
+  cursor: { current: Pt | null }
 }) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -92,13 +96,21 @@ export function useShortcuts({
         st.setSelection(next)
         return
       }
+      if (mod && key === 'c' && copyToClipboard()) return e.preventDefault()
+      if (mod && key === 'x' && cutToClipboard()) return e.preventDefault()
+      if (mod && key === 'v' && pasteClipboard(cursor.current)) return e.preventDefault()
+      if (mod && key === 'l') {
+        e.preventDefault()
+        if (sel.some((s) => s.kind === 'item')) st.commit((p) => toggleLock(p, sel))
+        return
+      }
       if (mod) return
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (!sel.length) return
         e.preventDefault()
+        // Locked items survive and stay selected.
         st.commit((p) => deleteSelection(p, sel))
-        st.setSelection([])
         return
       }
       if (e.key === 'Escape') {
@@ -153,5 +165,5 @@ export function useShortcuts({
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
     }
-  }, [tools, fit, zoomCenter, setSpaceDown])
+  }, [tools, fit, zoomCenter, setSpaceDown, cursor])
 }

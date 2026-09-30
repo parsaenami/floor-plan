@@ -25,10 +25,12 @@ const GROUPS: [string, [string, string][]][] = [
     'Edit',
     [
       ['⌘Z / ⇧⌘Z', 'Undo / redo'],
+      ['⌘C / ⌘X / ⌘V', 'Copy / cut / paste'],
       ['⌘D', 'Duplicate'],
       ['⌘A', 'Select all'],
       ['Delete', 'Delete selection'],
       ['R / ⇧R', 'Rotate 90°'],
+      ['⌘L', 'Lock / unlock furniture'],
       ['F / ⇧F', 'Flip door side / hinge'],
       ['F (wall)', 'Flip wall thickness side'],
       ['] / [', 'Bring forward / send backward'],
