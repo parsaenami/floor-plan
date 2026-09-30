@@ -1,8 +1,9 @@
-import { ArrowLeft, Download, FileJson, Keyboard, Magnet, Map as MapIcon, Redo2, Ruler, Undo2 } from 'lucide-react'
+import { ArrowLeft, Box, Download, FileJson, Keyboard, Magnet, Map as MapIcon, Redo2, Ruler, Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { Plan } from '../../model/types'
 import { ExportModal } from '../../export/ExportModal'
+import { Preview3DModal } from '../../render3d/Preview3DModal'
 import { downloadJson, planFile, slug } from '../../persistence/importExport'
 import { useComponents, useDefMap } from '../../store/componentsStore'
 import { useEditor } from '../../store/editorStore'
@@ -90,6 +91,7 @@ function EditorLayout() {
   const defs = useDefMap()
   const custom = useComponents((s) => s.custom)
   const [exporting, setExporting] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
 
   useEffect(() => {
     document.title = `${plan.name} · Floor Plan Studio`
@@ -148,6 +150,9 @@ function EditorLayout() {
         <button className="btn ghost" title="Download plan as JSON" onClick={() => downloadJson(planFile(plan, custom), `${slug(plan.name)}.json`)}>
           <FileJson size={14} /> JSON
         </button>
+        <button className="btn" title="3D preview" onClick={() => setPreviewing(true)}>
+          <Box size={14} /> 3D
+        </button>
         <Link to={`/plan/${plan.id}/output`} className="btn">
           <MapIcon size={14} /> Output
         </Link>
@@ -162,6 +167,7 @@ function EditorLayout() {
         <PropertiesPanel defs={defs} />
       </div>
       <HelpOverlay />
+      {previewing && <Preview3DModal plan={plan} defs={defs} onClose={() => setPreviewing(false)} />}
       {exporting && <ExportModal plan={plan} defs={defs} onClose={() => setExporting(false)} />}
     </div>
   )
