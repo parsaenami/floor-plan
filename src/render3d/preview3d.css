@@ -1,0 +1,26 @@
+.preview3d {
+  position: relative;
+  height: min(64vh, 560px);
+  border: 1px solid var(--line);
+}
+.viewer3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+.viewer3d canvas {
+  display: block;
+}
+.preview3d-msg {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.preview3d-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
