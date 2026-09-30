@@ -76,6 +76,11 @@ textarea {
   font: inherit;
   color: inherit;
 }
+/* The browser default is one grey for every theme; unreadable on blueprint. */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 
 a {
   color: inherit;

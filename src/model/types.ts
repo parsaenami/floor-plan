@@ -52,6 +52,8 @@ export interface Item {
   w?: number
   d?: number
   label?: string
+  /** Locked items can be selected but not moved, rotated, resized or deleted. */
+  locked?: boolean
 }
 
 export interface RoomLabel {
@@ -86,6 +88,21 @@ export interface Plan {
   roomLabels: RoomLabel[]
   dimensions: Dimension[]
   settings: PlanSettings
+  /**
+   * Storeys in order. The top-level arrays above hold the active floor's content;
+   * the other floors keep theirs here. Missing on plans saved before floors.
+   */
+  floors?: Floor[]
+  /** Id of the active floor, whose content is at the top level. */
+  floorId?: string
+}
+
+export type FloorContent = Pick<Plan, 'walls' | 'openings' | 'items' | 'roomLabels' | 'dimensions'>
+
+/** A storey. Its content fields are empty while it is the active floor. */
+export interface Floor extends Partial<FloorContent> {
+  id: string
+  name: string
 }
 
 export type Category = 'Living' | 'Bedroom' | 'Kitchen' | 'Bathroom' | 'Office' | 'Storage' | 'Structure' | 'Outdoor' | 'Other'

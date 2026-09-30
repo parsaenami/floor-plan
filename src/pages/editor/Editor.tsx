@@ -1,4 +1,4 @@
-import { ArrowLeft, Box, Download, FileJson, Keyboard, Magnet, Map as MapIcon, Redo2, Ruler, Undo2 } from 'lucide-react'
+import { ArrowLeft, Box, Download, FileJson, Keyboard, Link2, Magnet, Map as MapIcon, Redo2, Ruler, Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { Plan } from '../../model/types'
@@ -16,6 +16,7 @@ import { PropertiesPanel } from './PropertiesPanel'
 import { Toolbar } from './Toolbar'
 import './editor.css'
 import { SettingsButton } from '../../settings/SettingsButton'
+import { copyShareLink } from '../Share'
 
 const SAVE_DELAY = 400
 
@@ -149,6 +150,9 @@ function EditorLayout() {
         </button>
         <button className="btn ghost" title="Download plan as JSON" onClick={() => downloadJson(planFile(plan, custom), `${slug(plan.name)}.json`)}>
           <FileJson size={14} /> JSON
+        </button>
+        <button className="btn ghost" title="Copy a link that opens this plan read-only" onClick={() => copyShareLink(plan, custom)}>
+          <Link2 size={14} /> Share
         </button>
         <button className="btn" title="3D preview" onClick={() => setPreviewing(true)}>
           <Box size={14} /> 3D

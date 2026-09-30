@@ -1,11 +1,12 @@
 import { Settings } from 'lucide-react'
 import { useState } from 'react'
-import { Modal, ThemePicker } from '../ui'
+import { Modal, Segmented, ThemePicker } from '../ui'
 import { SyncPanel, LABEL, ago } from '../sync/SyncPanel'
 import { PROVIDER_NAME } from '../sync/provider'
 import { useSync } from '../sync/syncStore'
+import { useUnitsStore } from '../units/unitsStore'
 
-/** Top-bar gear that opens the settings dialog (theme and cloud sync). */
+/** Top-bar gear that opens the settings dialog (theme, units and cloud sync). */
 export function SettingsButton() {
   const status = useSync((s) => s.status)
   const lastSync = useSync((s) => s.lastSync)
@@ -26,11 +27,23 @@ export function SettingsButton() {
 }
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { units, setUnits } = useUnitsStore()
   return (
     <Modal title="Settings" onClose={onClose}>
       <section className="settings-section">
         <h3>Theme</h3>
         <ThemePicker />
+      </section>
+      <section className="settings-section">
+        <h3>Units</h3>
+        <Segmented
+          value={units}
+          options={[
+            { value: 'metric', label: 'Metric (cm, m²)' },
+            { value: 'imperial', label: 'Imperial (ft-in, ft²)' },
+          ]}
+          onChange={setUnits}
+        />
       </section>
       <section className="settings-section">
         <h3>Cloud sync</h3>

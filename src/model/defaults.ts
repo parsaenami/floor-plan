@@ -3,6 +3,8 @@ import type { Item, Opening, OpeningKind, Plan, PlanSettings, Pt, RoomLabel, Wal
 
 export const uid = () => nanoid(10)
 
+export const DEFAULT_FLOOR_NAME = 'Ground floor'
+
 export const DEFAULT_SETTINGS: PlanSettings = {
   gridSize: 10,
   snap: true,
@@ -32,6 +34,7 @@ export const OPENING_LABEL: Record<OpeningKind, string> = {
 
 export function newPlan(name: string): Plan {
   const now = Date.now()
+  const floorId = uid()
   return {
     id: uid(),
     name,
@@ -43,6 +46,8 @@ export function newPlan(name: string): Plan {
     roomLabels: [],
     dimensions: [],
     settings: { ...DEFAULT_SETTINGS },
+    floors: [{ id: floorId, name: DEFAULT_FLOOR_NAME }],
+    floorId,
   }
 }
 

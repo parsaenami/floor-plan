@@ -1,4 +1,4 @@
-import { Copy, FileDown, Pencil, Plus, Trash2, Upload } from 'lucide-react'
+import { Copy, FileDown, Link2, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { Plan } from '../model/types'
@@ -8,10 +8,13 @@ import { PlanThumb } from '../render/PlanThumb'
 import { useComponents, useDefMap } from '../store/componentsStore'
 import { usePlans, type Template } from '../store/plansStore'
 import { ConfirmModal, Field, Modal, Segmented, toast } from '../ui'
+import { formatArea } from '../units/units'
+import { useUnits } from '../units/unitsStore'
 import { LegalFooter } from './Legal'
 import './dashboard.css'
 import { DashHead } from './DashHead'
 import { SettingsButton } from '../settings/SettingsButton'
+import { copyShareLink } from './Share'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -79,6 +82,7 @@ export function Dashboard() {
                 toast('Plan duplicated')
               }}
               onExport={() => downloadJson(planFile(p, custom), `${slug(p.name)}.json`)}
+              onShare={() => copyShareLink(p, custom)}
               onDelete={() => setDeleting(p)}
             />
           ))}
@@ -128,6 +132,7 @@ function PlanCard({
   onRename,
   onDuplicate,
   onExport,
+  onShare,
   onDelete,
 }: {
   plan: Plan
@@ -136,10 +141,12 @@ function PlanCard({
   onRename: () => void
   onDuplicate: () => void
   onExport: () => void
+  onShare: () => void
   onDelete: () => void
 }) {
   const rooms = useMemo(() => detectRooms(plan.walls, plan.roomLabels), [plan.walls, plan.roomLabels])
   const area = rooms.reduce((s, r) => s + r.area, 0)
+  const units = useUnits()
   return (
     <article className="plan-card">
       <button className="plan-thumb" onClick={onOpen} aria-label={`Open ${plan.name}`}>
@@ -151,7 +158,7 @@ function PlanCard({
             {plan.name}
           </button>
           <div className="mono plan-sub">
-            {dateFmt.format(plan.updatedAt)} · {rooms.length} rooms · {area.toFixed(1)} m²
+            {dateFmt.format(plan.updatedAt)} · {rooms.length} rooms · {formatArea(area, units, 1)}
           </div>
         </div>
         <div className="plan-actions">
@@ -163,6 +170,9 @@ function PlanCard({
           </button>
           <button className="icon-btn" title="Export JSON" onClick={onExport}>
             <FileDown size={14} />
+          </button>
+          <button className="icon-btn" title="Copy share link" onClick={onShare}>
+            <Link2 size={14} />
           </button>
           <button className="icon-btn" title="Delete" onClick={onDelete}>
             <Trash2 size={14} />

@@ -70,7 +70,7 @@ export function translateSelection(plan: Plan, sel: SelectionRef[], delta: Pt) {
   }
   const itemIds = ids(sel, 'item')
   for (const it of plan.items) {
-    if (itemIds.has(it.id)) {
+    if (itemIds.has(it.id) && !it.locked) {
       it.x += delta.x
       it.y += delta.y
     }
@@ -94,40 +94,73 @@ export function deleteSelection(plan: Plan, sel: SelectionRef[]) {
   const dimIds = ids(sel, 'dimension')
   plan.walls = plan.walls.filter((w) => !wallIds.has(w.id))
   plan.openings = plan.openings.filter((o) => !openingIds.has(o.id) && !wallIds.has(o.wallId))
-  plan.items = plan.items.filter((i) => !itemIds.has(i.id))
+  plan.items = plan.items.filter((i) => !itemIds.has(i.id) || i.locked)
   plan.roomLabels = plan.roomLabels.filter((l) => !labelIds.has(l.id))
   plan.dimensions = plan.dimensions.filter((d) => !dimIds.has(d.id))
 }
 
-/** Copies the selection with an offset and returns the new selection. */
-export function duplicateSelection(plan: Plan, sel: SelectionRef[], offset: Pt): SelectionRef[] {
+/** Entities lifted out of a plan, as held on the clipboard. */
+export type Clip = Pick<Plan, 'walls' | 'openings' | 'items' | 'roomLabels' | 'dimensions'>
+
+/** Deep copies the selection; openings come along with their walls. */
+export function copySelection(plan: Plan, sel: SelectionRef[]): Clip {
+  const wallIds = ids(sel, 'wall')
+  const openingIds = ids(sel, 'opening')
+  return structuredClone({
+    walls: plan.walls.filter((w) => wallIds.has(w.id)),
+    openings: plan.openings.filter((o) => wallIds.has(o.wallId) || openingIds.has(o.id)),
+    items: plan.items.filter((i) => ids(sel, 'item').has(i.id)),
+    roomLabels: plan.roomLabels.filter((l) => ids(sel, 'label').has(l.id)),
+    dimensions: plan.dimensions.filter((d) => ids(sel, 'dimension').has(d.id)),
+  })
+}
+
+/** Centre of the points in a clip, or null when it is empty. */
+export function clipCenter(clip: Clip): Pt | null {
+  const pts = [
+    ...clip.walls.flatMap((w) => [w.a, w.b]),
+    ...clip.items.map((i) => ({ x: i.x, y: i.y })),
+    ...clip.roomLabels.map((l) => l.point),
+    ...clip.dimensions.flatMap((d) => [d.a, d.b]),
+  ]
+  if (!pts.length) return null
+  const xs = pts.map((p) => p.x)
+  const ys = pts.map((p) => p.y)
+  return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 }
+}
+
+/**
+ * Adds a clip to the plan with fresh ids, shifted by `offset`, and returns the
+ * new selection. An opening copied without its wall goes onto the same wall,
+ * shifted along it, if the plan has that wall; otherwise it is dropped.
+ */
+export function pasteClip(plan: Plan, clip: Clip, offset: Pt): SelectionRef[] {
   const out: SelectionRef[] = []
   const wallMap = new Map<string, string>()
-  for (const w of plan.walls.filter((w) => ids(sel, 'wall').has(w.id))) {
+  for (const w of clip.walls) {
     const id = uid()
     wallMap.set(w.id, id)
     plan.walls.push({ ...w, id, a: add(w.a, offset), b: add(w.b, offset) })
     out.push({ kind: 'wall', id })
   }
-  const openingIds = ids(sel, 'opening')
-  for (const o of plan.openings.filter((o) => wallMap.has(o.wallId) || openingIds.has(o.id))) {
+  for (const o of clip.openings) {
     const copiedWall = wallMap.get(o.wallId)
-    // An opening duplicated on its own stays on the same wall, shifted along it.
+    if (!copiedWall && !plan.walls.some((w) => w.id === o.wallId)) continue
     const id = uid()
     plan.openings.push(copiedWall ? { ...o, id, wallId: copiedWall } : { ...o, id, offset: o.offset + o.width + 10 })
     if (!copiedWall) out.push({ kind: 'opening', id })
   }
-  for (const it of plan.items.filter((i) => ids(sel, 'item').has(i.id))) {
+  for (const it of clip.items) {
     const id = uid()
     plan.items.push({ ...it, id, x: it.x + offset.x, y: it.y + offset.y })
     out.push({ kind: 'item', id })
   }
-  for (const l of plan.roomLabels.filter((l) => ids(sel, 'label').has(l.id))) {
+  for (const l of clip.roomLabels) {
     const id = uid()
     plan.roomLabels.push({ ...l, id, point: add(l.point, offset) })
     out.push({ kind: 'label', id })
   }
-  for (const d of plan.dimensions.filter((d) => ids(sel, 'dimension').has(d.id))) {
+  for (const d of clip.dimensions) {
     const id = uid()
     plan.dimensions.push({ ...d, id, a: add(d.a, offset), b: add(d.b, offset) })
     out.push({ kind: 'dimension', id })
@@ -136,10 +169,15 @@ export function duplicateSelection(plan: Plan, sel: SelectionRef[], offset: Pt):
   return out
 }
 
+/** Copies the selection with an offset and returns the new selection. */
+export function duplicateSelection(plan: Plan, sel: SelectionRef[], offset: Pt): SelectionRef[] {
+  return pasteClip(plan, copySelection(plan, sel), offset)
+}
+
 /** Rotates selected items about their own centres, or a group about its centre. */
 export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
   const itemIds = ids(sel, 'item')
-  const items = plan.items.filter((i) => itemIds.has(i.id))
+  const items = plan.items.filter((i) => itemIds.has(i.id) && !i.locked)
   if (!items.length) return
   const norm = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180
   if (items.length === 1) {
@@ -152,6 +190,21 @@ export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
     it.x = p.x
     it.y = p.y
     it.rotation = norm(it.rotation + deg)
+  }
+}
+
+/** True when the selection has items and all of them are locked. */
+export function allLocked(plan: Plan, sel: SelectionRef[]) {
+  const items = plan.items.filter((i) => ids(sel, 'item').has(i.id))
+  return items.length > 0 && items.every((i) => i.locked)
+}
+
+/** Locks the selected items, or unlocks them if all are already locked. */
+export function toggleLock(plan: Plan, sel: SelectionRef[]) {
+  const unlock = allLocked(plan, sel)
+  for (const it of plan.items.filter((i) => ids(sel, 'item').has(i.id))) {
+    if (unlock) delete it.locked
+    else it.locked = true
   }
 }
 

@@ -22,7 +22,8 @@ export interface LibraryFile {
 }
 
 export function planFile(plan: Plan, custom: ComponentDef[]): PlanFile {
-  const used = new Set(plan.items.map((i) => i.defId))
+  const items = [plan.items, ...(plan.floors ?? []).map((f) => f.items ?? [])].flat()
+  const used = new Set(items.map((i) => i.defId))
   return { app: APP, version: VERSION, type: 'plan', plan, components: custom.filter((c) => used.has(c.id)) }
 }
 

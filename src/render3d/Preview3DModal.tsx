@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo } from 'react'
+import { activeFloor } from '../model/floors'
 import type { Plan } from '../model/types'
 import type { DefMap } from '../render/planGeometry'
 import { usePlanColors } from '../theme/themes'
@@ -12,8 +13,10 @@ const Viewer = lazy(() => import('./Viewer'))
 export function Preview3DModal({ plan, defs, onClose }: { plan: Plan; defs: DefMap; onClose: () => void }) {
   const colors = usePlanColors()
   const scene = useMemo(() => planScene(plan, defs), [plan, defs])
+  // The plan's top-level content is the active floor; name it when there are others.
+  const floor = (plan.floors?.length ?? 0) > 1 ? activeFloor(plan)?.name : undefined
   return (
-    <Modal title="3D preview" onClose={onClose} wide>
+    <Modal title={floor ? `3D preview · ${floor}` : '3D preview'} onClose={onClose} wide>
       <div className="preview3d">
         {scene.solids.length ? (
           <Suspense fallback={<div className="preview3d-msg mono">Loading…</div>}>

@@ -18,6 +18,8 @@ import { DimLine } from '../../render/DimLine'
 import { itemCorners, itemLocalToWorld, itemSize, type DefMap } from '../../render/planGeometry'
 import { HaloText, Primitives } from '../../render/Primitives'
 import { usePlanColors } from '../../theme/themes'
+import { formatArea, formatLength } from '../../units/units'
+import { useUnits } from '../../units/unitsStore'
 import type { Preview } from './tools/types'
 
 const pts = (p: Pt[]) => p.map((q) => `${q.x},${q.y}`).join(' ')
@@ -52,6 +54,19 @@ function Handle({ p, unit, data, cursor, round }: { p: Pt; unit: number; data: R
   )
 }
 
+/** Small padlock centred on p, marking a locked item. */
+function LockGlyph({ p, unit }: { p: Pt; unit: number }) {
+  const c = usePlanColors()
+  const u = unit
+  return (
+    <g pointerEvents="none" transform={`translate(${p.x} ${p.y})`} stroke={c.ink} strokeWidth={u}>
+      <circle r={8 * u} fill={c.paper} />
+      <path d={`M ${-2.5 * u} ${-u} v ${-2 * u} a ${2.5 * u} ${2.5 * u} 0 0 1 ${5 * u} 0 v ${2 * u}`} fill="none" />
+      <rect x={-4 * u} y={-u} width={8 * u} height={5.5 * u} rx={u} fill={c.ink} />
+    </g>
+  )
+}
+
 /** Point on a wall at arc length s, pushed sideways by `offset`. */
 function sidePoint(w: Wall, s: number, offset: number): Pt {
   const f = wallFrame(w, s)
@@ -60,6 +75,7 @@ function sidePoint(w: Wall, s: number, offset: number): Pt {
 
 /** Length for straight walls; arc length, radius and sweep for curved ones. */
 function WallDims({ w, unit }: { w: Omit<Wall, 'id'>; unit: number }) {
+  const units = useUnits()
   const [lo, hi] = wallBand(w)
   const arc = wallArc(w)
   if (!arc) return <DimLine a={w.a} b={w.b} offset={hi + 16 * unit} unit={unit} />
@@ -71,7 +87,7 @@ function WallDims({ w, unit }: { w: Omit<Wall, 'id'>; unit: number }) {
   const p = add(f.p, scale(perp(f.dir), side * (Math.max(0, body) + 14 * unit)))
   return (
     <HaloText x={p.x} y={p.y} middle size={unit * 8.5} unit={unit}>
-      {`${Math.round(l)} · R${Math.round(arc.r)} · ${Math.round(Math.abs(sweepOf(w)))}°`}
+      {`${formatLength(l, units)} · R${formatLength(arc.r, units)} · ${Math.round(Math.abs(sweepOf(w)))}°`}
     </HaloText>
   )
 }
@@ -103,7 +119,8 @@ export function Overlay({
             return (
               <g key={s.id}>
                 <Outline points={corners} unit={unit} />
-                {single && (
+                {it.locked && <LockGlyph p={itemLocalToWorld(it, w, d, { x: w, y: 0 })} unit={unit} />}
+                {single && !it.locked && (
                   <>
                     {[-1, 0, 1].flatMap((sx) =>
                       [-1, 0, 1]
@@ -236,6 +253,7 @@ function SnapMark({ p, kind, unit }: { p: Pt; kind: string; unit: number }) {
 
 export function PreviewLayer({ plan, preview, unit }: { plan: Plan; preview: Preview | null; unit: number }) {
   const c = usePlanColors()
+  const units = useUnits()
   if (!preview) return null
   const t = plan.settings.defaultWallThickness
   const ghost = { fill: c.ink, fillOpacity: 0.28, stroke: c.ink, strokeWidth: unit }
@@ -308,7 +326,7 @@ export function PreviewLayer({ plan, preview, unit }: { plan: Plan; preview: Pre
             fontFamily="var(--font-mono)"
             fill={c.ink}
           >
-            {(((x1 - x0) * (y1 - y0)) / 10000).toFixed(2)} m²
+            {formatArea(((x1 - x0) * (y1 - y0)) / 10000, units)}
           </text>
         </>
       )
