@@ -107,20 +107,23 @@ export function Canvas({ defs }: { defs: DefMap }) {
     return { x: cam.x + s.x / cam.zoom, y: cam.y + s.y / cam.zoom }
   }
 
-  // Wheel: pinch / ⌘-scroll / mouse wheel zooms, trackpad scroll pans.
+  // Wheel: pinch / ⌘-scroll zooms, any other scroll pans.
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      const screen = toScreen(e.clientX, e.clientY)
-      const mouseWheel = e.deltaMode === 1 || (e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 50)
-      if (e.ctrlKey || e.metaKey || mouseWheel) {
-        const dy = e.deltaMode === 1 ? e.deltaY * 20 : e.deltaY
-        zoomAt(screen, Math.exp(-dy * (e.ctrlKey && !mouseWheel ? 0.01 : 0.0015)))
+      // Line-mode deltas (some mouse wheels) count lines, not pixels.
+      const k = e.deltaMode === 1 ? 20 : 1
+      const dx = e.deltaX * k
+      const dy = e.deltaY * k
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch sends small steps; a mouse wheel notch is ~100px and needs a gentler rate.
+        const notch = e.deltaMode === 1 || (e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 50)
+        zoomAt(toScreen(e.clientX, e.clientY), Math.exp(-dy * (notch ? 0.0015 : 0.01)))
       } else {
         const cam = useEditor.getState().camera
-        setCamera({ ...cam, x: cam.x + e.deltaX / cam.zoom, y: cam.y + e.deltaY / cam.zoom })
+        setCamera({ ...cam, x: cam.x + dx / cam.zoom, y: cam.y + dy / cam.zoom })
       }
     }
     svg.addEventListener('wheel', onWheel, { passive: false })
