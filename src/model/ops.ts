@@ -199,6 +199,12 @@ export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
   }
 }
 
+/** True when some selected item is unlocked, so rotating the selection does something. */
+export function canRotate(plan: Plan, sel: SelectionRef[]) {
+  const itemIds = ids(sel, 'item')
+  return plan.items.some((i) => itemIds.has(i.id) && !i.locked)
+}
+
 /** The selected entities that can be locked: items and walls. */
 function lockables(plan: Plan, sel: SelectionRef[]): { locked?: boolean }[] {
   const itemIds = ids(sel, 'item')

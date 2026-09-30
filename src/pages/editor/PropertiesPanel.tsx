@@ -4,6 +4,7 @@ import type { Item, Opening, OpeningKind, Plan, SelectionRef, Wall } from '../..
 import { OPENING_LABEL } from '../../model/defaults'
 import {
   allLocked,
+  canRotate,
   clampOpenings,
   deleteSelection,
   duplicateSelection,
@@ -71,7 +72,7 @@ function Actions({ sel }: { sel: SelectionRef[] }) {
   return (
     <div className="props-actions">
       {hasItems && (
-        <button className="btn sm" onClick={() => st().commit((p) => rotateSelection(p, sel, 90))} title="Rotate 90° (R)">
+        <button className="btn sm" disabled={!canRotate(plan, sel)} onClick={() => st().commit((p) => rotateSelection(p, sel, 90))} title="Rotate 90° (R)">
           <RotateCw size={13} /> Rotate
         </button>
       )}
@@ -267,40 +268,43 @@ function ItemProps({ plan, id, defs }: { plan: Plan; id: string; defs: DefMap })
           />
         </Field>
       </Section>
-      <Section title="Geometry">
-        <Row>
-          <Field label="X">
-            <NumberInput value={it.x} suffix="cm" onChange={(v) => set((i) => void (i.x = v))} />
+      <fieldset className="props-lock" disabled={it.locked}>
+        <Section title="Geometry">
+          {it.locked && <p className="props-note">Locked. Unlock it (⌘L) to move or resize it.</p>}
+          <Row>
+            <Field label="X">
+              <NumberInput value={it.x} suffix="cm" onChange={(v) => set((i) => void (i.x = v))} />
+            </Field>
+            <Field label="Y">
+              <NumberInput value={it.y} suffix="cm" onChange={(v) => set((i) => void (i.y = v))} />
+            </Field>
+          </Row>
+          <Row>
+            <Field label="Width">
+              <NumberInput value={w} min={1} suffix="cm" onChange={(v) => set((i) => void (i.w = v))} />
+            </Field>
+            <Field label="Depth">
+              <NumberInput value={d} min={1} suffix="cm" onChange={(v) => set((i) => void (i.d = v))} />
+            </Field>
+          </Row>
+          <Field label="Rotation">
+            <NumberInput value={it.rotation} min={-180} max={180} step={15} suffix="°" onChange={(v) => set((i) => void (i.rotation = v))} />
           </Field>
-          <Field label="Y">
-            <NumberInput value={it.y} suffix="cm" onChange={(v) => set((i) => void (i.y = v))} />
-          </Field>
-        </Row>
-        <Row>
-          <Field label="Width">
-            <NumberInput value={w} min={1} suffix="cm" onChange={(v) => set((i) => void (i.w = v))} />
-          </Field>
-          <Field label="Depth">
-            <NumberInput value={d} min={1} suffix="cm" onChange={(v) => set((i) => void (i.d = v))} />
-          </Field>
-        </Row>
-        <Field label="Rotation">
-          <NumberInput value={it.rotation} min={-180} max={180} step={15} suffix="°" onChange={(v) => set((i) => void (i.rotation = v))} />
-        </Field>
-        {resized && (
-          <button
-            className="btn sm ghost"
-            onClick={() =>
-              set((i) => {
-                delete i.w
-                delete i.d
-              })
-            }
-          >
-            Reset to {formatLength(def.width, units)} × {formatLength(def.depth, units)}
-          </button>
-        )}
-      </Section>
+          {resized && (
+            <button
+              className="btn sm ghost"
+              onClick={() =>
+                set((i) => {
+                  delete i.w
+                  delete i.d
+                })
+              }
+            >
+              Reset to {formatLength(def.width, units)} × {formatLength(def.depth, units)}
+            </button>
+          )}
+        </Section>
+      </fieldset>
       <Arrange sel={[{ kind: 'item', id }]} />
       <Actions sel={[{ kind: 'item', id }]} />
     </>

@@ -3,6 +3,7 @@ import type { Plan, SelectionRef } from './types'
 import { newPlan } from './defaults'
 import {
   allLocked,
+  canRotate,
   clipCenter,
   copySelection,
   deleteSelection,
@@ -123,6 +124,13 @@ describe('locked items', () => {
     deleteSelection(p, [...sel('a', 'b'), { kind: 'label', id: 'l' }])
     expect(p.items.map((i) => i.id)).toEqual(['a'])
     expect(p.roomLabels).toEqual([])
+  })
+
+  it('can rotate only while an unlocked item is selected', () => {
+    const p = plan()
+    expect(canRotate(p, sel('a'))).toBe(false)
+    expect(canRotate(p, sel('a', 'b'))).toBe(true)
+    expect(canRotate(p, [{ kind: 'label', id: 'l' }])).toBe(false)
   })
 
   it('toggle: locks all unless all are locked', () => {

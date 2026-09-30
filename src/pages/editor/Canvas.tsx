@@ -19,7 +19,7 @@ import {
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Plan, Pt, SelectionRef } from '../../model/types'
 import { uid } from '../../model/defaults'
-import { allLocked, deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, stackRoom, toggleLock, type ZMove } from '../../model/ops'
+import { allLocked, canRotate, deleteSelection, duplicateSelection, reorderItems, rotateSelection, selectAll, stackRoom, toggleLock, type ZMove } from '../../model/ops'
 import { flipAlign } from '../../geometry/walls'
 import { usePlanColors } from '../../theme/themes'
 import { detectRooms } from '../../geometry/rooms'
@@ -466,7 +466,7 @@ function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
             <SendToBack size={14} /> Send to back <kbd>⇧[</kbd>
           </button>
           <hr />
-          <button role="menuitem" onClick={run(() => st.commit((p) => rotateSelection(p, sel, 90)))}>
+          <button role="menuitem" disabled={!canRotate(plan, sel)} onClick={run(() => st.commit((p) => rotateSelection(p, sel, 90)))}>
             <RotateCw size={14} /> Rotate 90° <kbd>R</kbd>
           </button>
         </>
