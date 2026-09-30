@@ -35,7 +35,7 @@ export function flipSelectedWalls() {
   const { selection, commit } = useEditor.getState()
   const ids = new Set(selection.filter((s) => s.kind === 'wall').map((s) => s.id))
   if (!ids.size) return false
-  commit((p) => p.walls.forEach((w) => ids.has(w.id) && (w.align = flipAlign(w.align))))
+  commit((p) => p.walls.forEach((w) => ids.has(w.id) && !w.locked && (w.align = flipAlign(w.align))))
   return true
 }
 
@@ -101,7 +101,7 @@ export function useShortcuts({
       if (mod && key === 'v' && pasteClipboard(cursor.current)) return e.preventDefault()
       if (mod && key === 'l') {
         e.preventDefault()
-        if (sel.some((s) => s.kind === 'item')) st.commit((p) => toggleLock(p, sel))
+        if (sel.some((s) => s.kind === 'item' || s.kind === 'wall')) st.commit((p) => toggleLock(p, sel))
         return
       }
       if (mod) return

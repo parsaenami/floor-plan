@@ -54,7 +54,7 @@ function Handle({ p, unit, data, cursor, round }: { p: Pt; unit: number; data: R
   )
 }
 
-/** Small padlock centred on p, marking a locked item. */
+/** Small padlock centred on p, marking a locked item or wall. */
 function LockGlyph({ p, unit }: { p: Pt; unit: number }) {
   const c = usePlanColors()
   const u = unit
@@ -162,7 +162,8 @@ export function Overlay({
                 <g pointerEvents="none">
                   <WallDims w={w} unit={unit} />
                 </g>
-                {single && (
+                {w.locked && <LockGlyph p={pointAlong(w, wallLength(w) / 2)} unit={unit} />}
+                {single && !w.locked && (
                   <>
                     <Handle p={w.a} unit={unit} cursor="move" data={{ handle: 'wall-end', id: w.id, end: 'a' }} />
                     <Handle p={w.b} unit={unit} cursor="move" data={{ handle: 'wall-end', id: w.id, end: 'b' }} />

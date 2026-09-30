@@ -469,18 +469,21 @@ function SelectionMenu({ at, onClose }: { at: Pt; onClose: () => void }) {
           <button role="menuitem" onClick={run(() => st.commit((p) => rotateSelection(p, sel, 90)))}>
             <RotateCw size={14} /> Rotate 90° <kbd>R</kbd>
           </button>
-          <button role="menuitem" onClick={run(() => st.commit((p) => toggleLock(p, sel)))}>
-            {unlock ? <LockOpen size={14} /> : <Lock size={14} />} {unlock ? 'Unlock' : 'Lock'} <kbd>⌘L</kbd>
-          </button>
         </>
+      )}
+      {(hasItems || walls.length > 0) && (
+        <button role="menuitem" onClick={run(() => st.commit((p) => toggleLock(p, sel)))}>
+          {unlock ? <LockOpen size={14} /> : <Lock size={14} />} {unlock ? 'Unlock' : 'Lock'} <kbd>⌘L</kbd>
+        </button>
       )}
       {walls.length > 0 && (
         <button
           role="menuitem"
+          disabled={walls.every((s) => plan.walls.find((w) => w.id === s.id)?.locked)}
           onClick={run(() =>
             st.commit((p) => {
               const ids = new Set(walls.map((w) => w.id))
-              for (const w of p.walls) if (ids.has(w.id)) w.align = flipAlign(w.align)
+              for (const w of p.walls) if (ids.has(w.id) && !w.locked) w.align = flipAlign(w.align)
             }),
           )}
         >

@@ -24,7 +24,7 @@ export function orientWalls(plan: Plan, ids?: Set<string>, includeCentred = fals
   if (!rooms.length) return
   const inRoom = (p: Pt) => rooms.some((r) => pointInPolygon(p, r.outline))
   for (const w of plan.walls) {
-    if (ids && !ids.has(w.id)) continue
+    if ((ids && !ids.has(w.id)) || w.locked) continue
     if (!includeCentred && (w.align ?? 'center') === 'center') continue
     const f = wallFrame(w, wallLength(w) / 2)
     const n = perp(f.dir)
@@ -46,8 +46,12 @@ export function clampOpenings(plan: Plan) {
   }
 }
 
-/** Moves every wall endpoint located at one of `points` by `delta`. */
+/** True when a locked wall ends at p, which pins every wall meeting there. */
+export const isPinned = (plan: Plan, p: Pt) => plan.walls.some((w) => w.locked && (eq(w.a, p, JOINT_EPS) || eq(w.b, p, JOINT_EPS)))
+
+/** Moves every wall endpoint located at one of `points` by `delta`, except at joints pinned by a locked wall. */
 function moveJointsAt(plan: Plan, points: Pt[], delta: Pt) {
+  points = points.filter((p) => !isPinned(plan, p))
   for (const w of plan.walls) {
     if (points.some((p) => eq(w.a, p, JOINT_EPS))) w.a = add(w.a, delta)
     if (points.some((p) => eq(w.b, p, JOINT_EPS))) w.b = add(w.b, delta)
@@ -92,6 +96,8 @@ export function deleteSelection(plan: Plan, sel: SelectionRef[]) {
   const itemIds = ids(sel, 'item')
   const labelIds = ids(sel, 'label')
   const dimIds = ids(sel, 'dimension')
+  // Locked walls survive, and so do the openings in them.
+  for (const w of plan.walls) if (w.locked) wallIds.delete(w.id)
   plan.walls = plan.walls.filter((w) => !wallIds.has(w.id))
   plan.openings = plan.openings.filter((o) => !openingIds.has(o.id) && !wallIds.has(o.wallId))
   plan.items = plan.items.filter((i) => !itemIds.has(i.id) || i.locked)
@@ -193,18 +199,25 @@ export function rotateSelection(plan: Plan, sel: SelectionRef[], deg: number) {
   }
 }
 
-/** True when the selection has items and all of them are locked. */
-export function allLocked(plan: Plan, sel: SelectionRef[]) {
-  const items = plan.items.filter((i) => ids(sel, 'item').has(i.id))
-  return items.length > 0 && items.every((i) => i.locked)
+/** The selected entities that can be locked: items and walls. */
+function lockables(plan: Plan, sel: SelectionRef[]): { locked?: boolean }[] {
+  const itemIds = ids(sel, 'item')
+  const wallIds = ids(sel, 'wall')
+  return [...plan.items.filter((i) => itemIds.has(i.id)), ...plan.walls.filter((w) => wallIds.has(w.id))]
 }
 
-/** Locks the selected items, or unlocks them if all are already locked. */
+/** True when the selection has items or walls and all of them are locked. */
+export function allLocked(plan: Plan, sel: SelectionRef[]) {
+  const all = lockables(plan, sel)
+  return all.length > 0 && all.every((x) => x.locked)
+}
+
+/** Locks the selected items and walls, or unlocks them if all are already locked. */
 export function toggleLock(plan: Plan, sel: SelectionRef[]) {
   const unlock = allLocked(plan, sel)
-  for (const it of plan.items.filter((i) => ids(sel, 'item').has(i.id))) {
-    if (unlock) delete it.locked
-    else it.locked = true
+  for (const x of lockables(plan, sel)) {
+    if (unlock) delete x.locked
+    else x.locked = true
   }
 }
 

@@ -394,3 +394,11 @@ input.floor-tab {
 .props-arrange .btn {
   justify-content: flex-start;
 }
+
+/* ---------- Locked wall fields ---------- */
+.props-lock {
+  display: contents;
+}
+.props-lock:disabled .props-section > :not(.eyebrow, .props-note) {
+  opacity: 0.4;
+}

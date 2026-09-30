@@ -23,6 +23,8 @@ export interface Wall {
    * quarter circle and ±1 a half circle. Positive bulges to the left of a→b.
    */
   bulge?: number
+  /** Locked walls can be selected but not moved, reshaped or deleted; their joints stay put. */
+  locked?: boolean
 }
 
 export type OpeningKind = 'door' | 'double-door' | 'sliding-door' | 'pocket-door' | 'bifold-door' | 'passage' | 'window'

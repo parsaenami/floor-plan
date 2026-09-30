@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan, SelectionRef } from './types'
 import { newPlan } from './defaults'
-import { allLocked, clipCenter, copySelection, deleteSelection, duplicateSelection, pasteClip, rotateSelection, toggleLock, translateSelection } from './ops'
+import {
+  allLocked,
+  clipCenter,
+  copySelection,
+  deleteSelection,
+  duplicateSelection,
+  moveJoint,
+  orientWalls,
+  pasteClip,
+  rotateSelection,
+  toggleLock,
+  translateSelection,
+} from './ops'
 
 function plan(): Plan {
   const p = newPlan('t')
@@ -122,5 +134,59 @@ describe('locked items', () => {
     expect(allLocked(p, sel('a', 'b'))).toBe(true)
     toggleLock(p, sel('a', 'b'))
     expect(p.items.some((i) => 'locked' in i)).toBe(false)
+  })
+})
+
+describe('locked walls', () => {
+  // w1 runs along the top, w2 down the right; they meet at (400, 0).
+  const locked = () => {
+    const p = plan()
+    p.walls[0].locked = true
+    return p
+  }
+  const wall = (p: Plan, id: string) => p.walls.find((w) => w.id === id)!
+  const walls = (...ids: string[]): SelectionRef[] => ids.map((id) => ({ kind: 'wall', id }))
+
+  it('do not move, and pin the joints they share', () => {
+    const p = locked()
+    translateSelection(p, walls('w1', 'w2'), { x: 10, y: 10 })
+    expect(wall(p, 'w1')).toMatchObject({ a: { x: 0, y: 0 }, b: { x: 400, y: 0 } })
+    // w2 keeps its end on the locked wall and moves the free one.
+    expect(wall(p, 'w2')).toMatchObject({ a: { x: 400, y: 0 }, b: { x: 410, y: 310 } })
+    moveJoint(p, { x: 400, y: 0 }, { x: 450, y: 50 })
+    expect(wall(p, 'w2').a).toEqual({ x: 400, y: 0 })
+  })
+
+  it('survive deletion along with their openings', () => {
+    const p = locked()
+    deleteSelection(p, walls('w1', 'w2'))
+    expect(p.walls.map((w) => w.id)).toEqual(['w1'])
+    expect(p.openings.map((o) => o.id)).toEqual(['o1'])
+  })
+
+  it('keep their thickness side when walls are reoriented', () => {
+    const p = newPlan('room')
+    const c = [
+      { x: 0, y: 0 },
+      { x: 400, y: 0 },
+      { x: 400, y: 300 },
+      { x: 0, y: 300 },
+    ]
+    p.walls = c.map((a, i) => ({ id: `r${i}`, a, b: c[(i + 1) % 4], thickness: 10 }))
+    p.walls[0].locked = true
+    orientWalls(p, undefined, true)
+    expect(wall(p, 'r0').align).toBeUndefined()
+    expect(p.walls.slice(1).every((w) => w.align)).toBe(true)
+  })
+
+  it('lock and unlock with items in one toggle', () => {
+    const p = plan()
+    const sel: SelectionRef[] = [...walls('w1'), { kind: 'item', id: 'i1' }]
+    p.items.push({ id: 'i1', defId: 'x', x: 0, y: 0, rotation: 0 })
+    toggleLock(p, sel)
+    expect(wall(p, 'w1').locked).toBe(true)
+    expect(allLocked(p, sel)).toBe(true)
+    toggleLock(p, sel)
+    expect('locked' in wall(p, 'w1')).toBe(false)
   })
 })

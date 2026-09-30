@@ -66,6 +66,7 @@ function Arrange({ sel }: { sel: SelectionRef[] }) {
 function Actions({ sel }: { sel: SelectionRef[] }) {
   const plan = useEditor((s) => s.plan) as Plan
   const hasItems = sel.some((s) => s.kind === 'item')
+  const lockable = hasItems || sel.some((s) => s.kind === 'wall')
   const locked = allLocked(plan, sel)
   return (
     <div className="props-actions">
@@ -74,7 +75,7 @@ function Actions({ sel }: { sel: SelectionRef[] }) {
           <RotateCw size={13} /> Rotate
         </button>
       )}
-      {hasItems && (
+      {lockable && (
         <button className="btn sm" aria-pressed={locked} onClick={() => st().commit((p) => toggleLock(p, sel))} title="Lock in place (⌘L)">
           {locked ? <LockOpen size={13} /> : <Lock size={13} />} {locked ? 'Unlock' : 'Lock'}
         </button>
@@ -330,89 +331,93 @@ function WallProps({ plan, id }: { plan: Plan; id: string }) {
   const side = Math.sign(sweep) || 1
   return (
     <>
-      <Section title={arc ? 'Curved wall' : 'Wall'}>
-        <Row>
-          {arc ? (
-            <Field label="Radius">
-              <NumberInput
-                value={arc.r}
-                min={Math.ceil(dist(w.a, w.b) / 2)}
-                suffix="cm"
-                onChange={(r) =>
-                  set((x) => {
-                    // Keep the side and whether it is the long way round.
-                    const c = dist(x.a, x.b)
-                    const h = Math.sqrt(Math.max(0, r * r - (c * c) / 4))
-                    const sagitta = Math.abs(sweepOf(x)) > 180 ? r + h : r - h
-                    x.bulge = Math.sign(x.bulge ?? 1) * ((2 * sagitta) / c)
-                  })
-                }
-              />
+      {/* A disabled fieldset turns off every control inside it. */}
+      <fieldset className="props-lock" disabled={w.locked}>
+        <Section title={arc ? 'Curved wall' : 'Wall'}>
+          {w.locked && <p className="props-note">Locked. Unlock it (⌘L) to change its shape.</p>}
+          <Row>
+            {arc ? (
+              <Field label="Radius">
+                <NumberInput
+                  value={arc.r}
+                  min={Math.ceil(dist(w.a, w.b) / 2)}
+                  suffix="cm"
+                  onChange={(r) =>
+                    set((x) => {
+                      // Keep the side and whether it is the long way round.
+                      const c = dist(x.a, x.b)
+                      const h = Math.sqrt(Math.max(0, r * r - (c * c) / 4))
+                      const sagitta = Math.abs(sweepOf(x)) > 180 ? r + h : r - h
+                      x.bulge = Math.sign(x.bulge ?? 1) * ((2 * sagitta) / c)
+                    })
+                  }
+                />
+              </Field>
+            ) : (
+              <Field label="Length">
+                <NumberInput
+                  value={length}
+                  min={1}
+                  suffix="cm"
+                  onChange={(v) =>
+                    st().commit((p) => {
+                      const x = p.walls.find((q) => q.id === id)!
+                      const dir = norm(sub(x.b, x.a))
+                      moveJoint(p, x.b, add(x.a, scale(dir, v)))
+                    })
+                  }
+                />
+              </Field>
+            )}
+            <Field label="Thickness">
+              <NumberInput value={w.thickness} min={2} max={100} suffix="cm" onChange={(v) => set((x) => void (x.thickness = v))} />
             </Field>
-          ) : (
-            <Field label="Length">
-              <NumberInput
-                value={length}
-                min={1}
-                suffix="cm"
-                onChange={(v) =>
-                  st().commit((p) => {
-                    const x = p.walls.find((q) => q.id === id)!
-                    const dir = norm(sub(x.b, x.a))
-                    moveJoint(p, x.b, add(x.a, scale(dir, v)))
-                  })
-                }
-              />
-            </Field>
-          )}
-          <Field label="Thickness">
-            <NumberInput value={w.thickness} min={2} max={100} suffix="cm" onChange={(v) => set((x) => void (x.thickness = v))} />
+          </Row>
+          <Field label="Thickness side">
+            <Segmented
+              value={align === 'center' ? 'center' : 'side'}
+              onChange={(v) => set((x) => void (x.align = v === 'center' ? 'center' : 'left'))}
+              options={[
+                { value: 'side', label: 'One side' },
+                { value: 'center', label: 'Centred' },
+              ]}
+            />
           </Field>
-        </Row>
-        <Field label="Thickness side">
+          {align !== 'center' && (
+            <button className="btn sm" onClick={() => set((x) => void (x.align = flipAlign(x.align)))} title="Flip thickness side (F)">
+              <FlipVertical2 size={13} /> Flip to other side
+            </button>
+          )}
+        </Section>
+        <Section title="Curve">
           <Segmented
-            value={align === 'center' ? 'center' : 'side'}
-            onChange={(v) => set((x) => void (x.align = v === 'center' ? 'center' : 'left'))}
+            value={curve}
+            onChange={(v) => {
+              if (v === 'straight') setSweep(0)
+              else if (v === 'quarter') setSweep(90 * side)
+              else if (v === 'half') setSweep(180 * side)
+              else setSweep((curve === 'straight' ? 45 : Math.abs(sweep)) * side)
+            }}
             options={[
-              { value: 'side', label: 'One side' },
-              { value: 'center', label: 'Centred' },
+              { value: 'straight', label: 'Straight' },
+              { value: 'quarter', label: '¼ circle' },
+              { value: 'half', label: '½ circle' },
+              { value: 'custom', label: 'Custom' },
             ]}
           />
-        </Field>
-        {align !== 'center' && (
-          <button className="btn sm" onClick={() => set((x) => void (x.align = flipAlign(x.align)))} title="Flip thickness side (F)">
-            <FlipVertical2 size={13} /> Flip to other side
-          </button>
-        )}
-      </Section>
-      <Section title="Curve">
-        <Segmented
-          value={curve}
-          onChange={(v) => {
-            if (v === 'straight') setSweep(0)
-            else if (v === 'quarter') setSweep(90 * side)
-            else if (v === 'half') setSweep(180 * side)
-            else setSweep((curve === 'straight' ? 45 : Math.abs(sweep)) * side)
-          }}
-          options={[
-            { value: 'straight', label: 'Straight' },
-            { value: 'quarter', label: '¼ circle' },
-            { value: 'half', label: '½ circle' },
-            { value: 'custom', label: 'Custom' },
-          ]}
-        />
-        {arc && (
-          <>
-            <Field label="Sweep">
-              <NumberInput value={Math.abs(sweep)} min={1} max={330} suffix="°" onChange={(v) => setSweep(v * side)} />
-            </Field>
-            <button className="btn sm" onClick={() => setSweep(-sweep)}>
-              <FlipHorizontal2 size={13} /> Bulge the other way
-            </button>
-          </>
-        )}
-        {!arc && <p className="props-note">Or drag the round handle in the middle of the wall. Curved walls (A) draws arcs directly.</p>}
-      </Section>
+          {arc && (
+            <>
+              <Field label="Sweep">
+                <NumberInput value={Math.abs(sweep)} min={1} max={330} suffix="°" onChange={(v) => setSweep(v * side)} />
+              </Field>
+              <button className="btn sm" onClick={() => setSweep(-sweep)}>
+                <FlipHorizontal2 size={13} /> Bulge the other way
+              </button>
+            </>
+          )}
+          {!arc && <p className="props-note">Or drag the round handle in the middle of the wall. Curved walls (A) draws arcs directly.</p>}
+        </Section>
+      </fieldset>
       <Section title="Details">
         <table className="props-table mono">
           <tbody>
@@ -448,7 +453,7 @@ function WallProps({ plan, id }: { plan: Plan; id: string }) {
           className="btn sm"
           onClick={() =>
             st().commit((p) => {
-              for (const x of p.walls) if (x.id !== id) x.thickness = w.thickness
+              for (const x of p.walls) if (x.id !== id && !x.locked) x.thickness = w.thickness
               clampOpenings(p)
             })
           }
